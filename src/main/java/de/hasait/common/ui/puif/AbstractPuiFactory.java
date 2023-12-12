@@ -15,17 +15,20 @@ import org.springframework.context.MessageSource;
 import java.beans.PropertyDescriptor;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Supplier;
 
-public abstract class AbstractPropertyUiFactory<P, V, F extends Component & HasValue<?, V>> implements PropertyUiFactory<P> {
+public abstract class AbstractPuiFactory<P, V, F extends Component & HasValue<?, V>, C> implements PropertyUiFactory<P> {
 
     private final Class<P> propertyClass;
     private final int priority;
+    private final Supplier<C> contextFactory;
 
     private MessageSource messageSource;
 
-    protected AbstractPropertyUiFactory(Class<P> propertyClass, int priority) {
+    protected AbstractPuiFactory(Class<P> propertyClass, int priority, Supplier<C> contextFactory) {
         this.propertyClass = propertyClass;
         this.priority = priority;
+        this.contextFactory = contextFactory;
     }
 
     @Autowired
@@ -45,7 +48,8 @@ public abstract class AbstractPropertyUiFactory<P, V, F extends Component & HasV
 
     @Override
     public final <B> PropertyField<B> createField(Class<B> beanClass, PropertyDescriptor propertyDescriptor) {
-        if (!canHandle(propertyDescriptor)) {
+        C context = contextFactory.get();
+        if (!canHandle(beanClass, propertyDescriptor, context)) {
             return null;
         }
 
@@ -57,19 +61,20 @@ public abstract class AbstractPropertyUiFactory<P, V, F extends Component & HasV
             @Override
             public void addFieldAndBind(FormLayout formLayout, Binder<B> binder) {
                 String label = determineLabel(propertyName);
-                F field = createAndAddField(formLayout, label);
+                F field = createAndAddField(formLayout, label, context);
                 Binder.BindingBuilder<B, V> bindingBuilder = binder.forField(field);
                 if (required) {
                     bindingBuilder = bindingBuilder.asRequired();
                 }
-                customizeBinding(bindingBuilder).bind(propertyName);
+                customizeBinding(bindingBuilder, context).bind(propertyName);
             }
         };
     }
 
     @Override
     public final <B> PropertyColumn<B> createColumn(Class<B> beanClass, PropertyDescriptor propertyDescriptor) {
-        if (!canHandle(propertyDescriptor)) {
+        C context = contextFactory.get();
+        if (!canHandle(beanClass, propertyDescriptor, context)) {
             return null;
         }
 
@@ -79,20 +84,20 @@ public abstract class AbstractPropertyUiFactory<P, V, F extends Component & HasV
         return new PropertyColumn<>(propertyName, layoutPriority) {
             @Override
             public Grid.Column<B> addColumn(Grid<B> grid) {
-                return AbstractPropertyUiFactory.this.addColumn(propertyName, determineLabel(propertyName), grid);
+                return AbstractPuiFactory.this.addColumn(propertyName, determineLabel(propertyName), grid, context);
             }
         };
     }
 
-    protected abstract F createAndAddField(FormLayout formLayout, String caption);
+    protected abstract F createAndAddField(FormLayout formLayout, String caption, C context);
 
-    protected abstract <B> Binder.BindingBuilder<B, P> customizeBinding(Binder.BindingBuilder<B, V> bindingBuilder);
+    protected abstract <B> Binder.BindingBuilder<B, P> customizeBinding(Binder.BindingBuilder<B, V> bindingBuilder, C context);
 
-    protected boolean canHandle(PropertyDescriptor propertyDescriptor) {
+    protected boolean canHandle(Class<?> beanClass, PropertyDescriptor propertyDescriptor, C context) {
         return propertyClass.isAssignableFrom(propertyDescriptor.getPropertyType());
     }
 
-    protected <B> Grid.Column<B> addColumn(String propertyName, String label, Grid<B> grid) {
+    protected <B> Grid.Column<B> addColumn(String propertyName, String label, Grid<B> grid, C context) {
         Grid.Column<B> column = grid.addColumn(propertyName);
         column.setHeader(label);
         return column;

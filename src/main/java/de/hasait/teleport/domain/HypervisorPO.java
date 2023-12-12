@@ -24,7 +24,7 @@ import java.util.List;
 @Table(name = "HYPERVISOR", uniqueConstraints = {
         @UniqueConstraint(name = "UC_HV_L_NAME", columnNames = {"LOCATION_ID", "NAME"})
 })
-public class HypervisorPO implements IdAndVersion {
+public class HypervisorPO implements IdAndVersion, HasHypervisor {
 
     @Id
     @GeneratedValue
@@ -106,6 +106,11 @@ public class HypervisorPO implements IdAndVersion {
 
     public List<StoragePO> getStorages() {
         return storages;
+    }
+
+    @Override
+    public HypervisorPO obtainHypervisor() {
+        return this;
     }
 
 }

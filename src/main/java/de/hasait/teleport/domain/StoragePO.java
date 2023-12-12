@@ -1,6 +1,8 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.ui.puif.StringSetPui;
+import de.hasait.common.ui.puif.TextAreaForStringPui;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -21,17 +23,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "STORAGE", uniqueConstraints = {
         @UniqueConstraint(name = "UC_ST_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"})
 })
-public class StoragePO implements IdAndVersion {
+public class StoragePO implements IdAndVersion, HasStorage {
 
     @Id
     @GeneratedValue
@@ -55,6 +55,7 @@ public class StoragePO implements IdAndVersion {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "STORAGE_ALIASES", joinColumns = @JoinColumn(name = "STORAGE_ID"))
+    @StringSetPui
     private Set<String> aliases = new HashSet<>();
 
     @Size(min = 1, max = 32)
@@ -64,6 +65,7 @@ public class StoragePO implements IdAndVersion {
 
     @Size(max = 512)
     @Column(name = "DRIVER_CONFIG")
+    @TextAreaForStringPui
     private String driverConfig;
 
     @Min(0)
@@ -121,16 +123,8 @@ public class StoragePO implements IdAndVersion {
         return aliases;
     }
 
-    public String getAliasesCsv() {
-        return aliases == null || aliases.isEmpty() ? "" : String.join(",", aliases);
-    }
-
-    public void setAliasesCsv(String aliasesCsv) {
-        if (aliasesCsv == null || aliasesCsv.isEmpty()) {
-            aliases = new HashSet<>();
-        } else {
-            aliases = Arrays.stream(aliasesCsv.split(",")).collect(Collectors.toSet());
-        }
+    public void setAliases(Set<String> aliases) {
+        this.aliases = aliases;
     }
 
     public String getDriver() {
@@ -159,6 +153,11 @@ public class StoragePO implements IdAndVersion {
 
     public List<VolumeGroupPO> getVolumeGroups() {
         return volumeGroups;
+    }
+
+    @Override
+    public StoragePO obtainStorage() {
+        return this;
     }
 
 }

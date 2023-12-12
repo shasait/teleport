@@ -51,7 +51,7 @@ public final class ReflectionUtil {
     }
 
     private static <A extends Annotation> A internalFindAnnotation(Class<?> beanType, PropertyDescriptor propertyDescriptor, Class<A> annotationClass) {
-        Field field = getField(beanType, propertyDescriptor);
+        Field field = findField(beanType, propertyDescriptor);
         if (field != null) {
             A annotation = AnnotationUtils.findAnnotation(field, annotationClass);
             if (annotation != null) {
@@ -78,12 +78,21 @@ public final class ReflectionUtil {
         return null;
     }
 
-    public static Field getField(Class<?> beanType, PropertyDescriptor propertyDescriptor) {
+    public static Field findField(Class<?> beanType, PropertyDescriptor propertyDescriptor) {
+        return findField(beanType, propertyDescriptor.getName(), propertyDescriptor.getPropertyType());
+    }
+
+    public static Field findField(Class<?> beanType, String name, Class<?> fieldType) {
         try {
-            return beanType.getField(propertyDescriptor.getName());
+            Field field = beanType.getDeclaredField(name);
+            if (fieldType.isAssignableFrom(field.getType())) {
+                return field;
+            }
         } catch (NoSuchFieldException e) {
-            return null;
+            //
         }
+        Class<?> superclass = beanType.getSuperclass();
+        return superclass != null ? findField(superclass, name, fieldType) : null;
     }
 
 }

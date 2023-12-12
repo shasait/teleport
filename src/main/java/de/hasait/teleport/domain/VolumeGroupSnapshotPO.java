@@ -12,7 +12,7 @@ import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "VG_SNAPSHOT")
-public class VolumeGroupSnapshotPO implements IdAndVersion {
+public class VolumeGroupSnapshotPO implements IdAndVersion, HasVolumeGroup {
 
     @Id
     @GeneratedValue
@@ -61,6 +61,11 @@ public class VolumeGroupSnapshotPO implements IdAndVersion {
 
     public void setData(SnapshotData data) {
         this.data = data;
+    }
+
+    @Override
+    public VolumeGroupPO obtainVolumeGroup() {
+        return volumeGroup;
     }
 
 }

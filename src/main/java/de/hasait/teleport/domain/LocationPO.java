@@ -18,7 +18,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "LOCATION")
-public class LocationPO implements IdAndVersion {
+public class LocationPO implements IdAndVersion, HasLocation {
 
     @Id
     @GeneratedValue
@@ -85,6 +85,11 @@ public class LocationPO implements IdAndVersion {
 
     public List<HypervisorPO> getHypervisors() {
         return hypervisors;
+    }
+
+    @Override
+    public LocationPO obtainLocation() {
+        return this;
     }
 
 }

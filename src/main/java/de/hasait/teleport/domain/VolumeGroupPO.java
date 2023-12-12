@@ -24,7 +24,7 @@ import java.util.List;
 @Table(name = "VOLUME_GROUP", uniqueConstraints = {
         @UniqueConstraint(name = "UC_VG_ST_NAME", columnNames = {"STORAGE_ID", "NAME"})
 })
-public class VolumeGroupPO implements IdAndVersion {
+public class VolumeGroupPO implements IdAndVersion, HasVolumeGroup {
 
     @Id
     @GeneratedValue
@@ -126,6 +126,11 @@ public class VolumeGroupPO implements IdAndVersion {
 
     public List<VolumeGroupSnapshotPO> getSnapshots() {
         return snapshots;
+    }
+
+    @Override
+    public VolumeGroupPO obtainVolumeGroup() {
+        return this;
     }
 
 }

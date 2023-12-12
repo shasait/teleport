@@ -7,18 +7,20 @@ import com.vaadin.flow.data.binder.Binder;
 import de.hasait.common.domain.SearchableRepository;
 import de.hasait.common.ui.JpaRepositoryDataProvider;
 
-public abstract class AbstractToOnePropertyUiFactory<PO, R extends SearchableRepository<PO, ?>> extends AbstractPropertyUiFactory<PO, PO, ComboBox<PO>> {
+import java.util.function.Supplier;
+
+public abstract class AbstractToOnePuiFactory<PO, R extends SearchableRepository<PO, ?>, C> extends AbstractPuiFactory<PO, PO, ComboBox<PO>, C> {
 
     private final R repository;
 
-    public AbstractToOnePropertyUiFactory(Class<PO> poClass, int priority, R repository) {
-        super(poClass, priority);
+    public AbstractToOnePuiFactory(Class<PO> poClass, int priority, Supplier<C> contextFactory, R repository) {
+        super(poClass, priority, contextFactory);
 
         this.repository = repository;
     }
 
     @Override
-    protected ComboBox<PO> createAndAddField(FormLayout formLayout, String caption) {
+    protected ComboBox<PO> createAndAddField(FormLayout formLayout, String caption, C context) {
         ComboBox<PO> field = new ComboBox<>(caption);
         field.setItems(new JpaRepositoryDataProvider<>(repository));
         field.setItemLabelGenerator(this::getPoLabel);
@@ -29,13 +31,13 @@ public abstract class AbstractToOnePropertyUiFactory<PO, R extends SearchableRep
     protected abstract String getPoLabel(PO po);
 
     @Override
-    protected <B> Binder.BindingBuilder<B, PO> customizeBinding(Binder.BindingBuilder<B, PO> bindingBuilder) {
+    protected <B> Binder.BindingBuilder<B, PO> customizeBinding(Binder.BindingBuilder<B, PO> bindingBuilder, C context) {
         return bindingBuilder;
     }
 
     @Override
-    protected <B> Grid.Column<B> addColumn(String propertyName, String label, Grid<B> grid) {
-        return super.addColumn(propertyName + "." + getColumnLabelProperty(), label, grid);
+    protected <B> Grid.Column<B> addColumn(String propertyName, String label, Grid<B> grid, C context) {
+        return super.addColumn(propertyName + "." + getColumnLabelProperty(), label, grid, context);
     }
 
     protected abstract String getColumnLabelProperty();

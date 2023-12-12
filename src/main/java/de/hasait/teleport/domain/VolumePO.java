@@ -23,7 +23,7 @@ import java.util.List;
 @Table(name = "VOLUME", uniqueConstraints = {
         @UniqueConstraint(name = "UC_V_VG_NAME", columnNames = {"VG_ID", "NAME"})
 })
-public class VolumePO implements IdAndVersion {
+public class VolumePO implements IdAndVersion, HasVolume {
 
     @Id
     @GeneratedValue
@@ -105,6 +105,11 @@ public class VolumePO implements IdAndVersion {
 
     public List<VolumeSnapshotPO> getSnapshots() {
         return snapshots;
+    }
+
+    @Override
+    public VolumePO obtainVolume() {
+        return this;
     }
 
 }
