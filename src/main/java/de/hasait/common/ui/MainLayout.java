@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.ui;
+package de.hasait.common.ui;
 
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -23,12 +23,10 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import de.hasait.common.security.SecurityService;
-import de.hasait.teleport.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +35,16 @@ import org.slf4j.LoggerFactory;
  */
 @SpringComponent
 @UIScope
-public class MainLayout extends AppLayout {
+public final class MainLayout extends AppLayout {
 
     private static final Logger LOG = LoggerFactory.getLogger(MainLayout.class);
 
+    private final MainLayoutCustomizer customizer;
+
     private final SecurityService securityService;
 
-    public MainLayout(SecurityService securityService) {
+    public MainLayout(MainLayoutCustomizer customizer, SecurityService securityService) {
+        this.customizer = customizer;
         this.securityService = securityService;
 
         createHeader();
@@ -51,7 +52,7 @@ public class MainLayout extends AppLayout {
     }
 
     private void createHeader() {
-        H1 logoH1 = new H1(Application.TITLE);
+        H1 logoH1 = new H1(VaadinUtil.getApplicationTitle());
         logoH1.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.MEDIUM);
 
         String loggedInUsername = securityService.getAuthenticatedUser().getUsername();
@@ -68,13 +69,9 @@ public class MainLayout extends AppLayout {
     }
 
     private void createDrawer() {
-        addToDrawer(new VerticalLayout( //
-                new RouterLink(LocationGridView.TITLE, LocationGridView.class), //
-                new RouterLink(NetworkGridView.TITLE, NetworkGridView.class), //
-                new RouterLink(HypervisorGridView.TITLE, HypervisorGridView.class), //
-                new RouterLink(StorageGridView.TITLE, StorageGridView.class), //
-                new RouterLink(VolumeGroupGridView.TITLE, VolumeGroupGridView.class) //
-        ));
+        VerticalLayout verticalLayout = new VerticalLayout();
+        customizer.populateDrawer(verticalLayout);
+        addToDrawer(verticalLayout);
     }
 
 }

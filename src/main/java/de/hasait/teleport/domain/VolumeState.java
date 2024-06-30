@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package de.hasait.teleport.domain;
 
 import de.hasait.common.util.FsbFormat;
 
-public enum VolumeGroupState {
+public enum VolumeState {
 
     ACTIVE("active", FsbFormat.LIGHT_PURPLE) //
     , //
@@ -28,8 +28,8 @@ public enum VolumeGroupState {
     INACTIVE("inactive", FsbFormat.LIGHT_BLUE) //
     ;
 
-    public static VolumeGroupState valueOfExternalValue(String externalValue) {
-        for (VolumeGroupState resourceState : values()) {
+    public static VolumeState valueOfExternalValue(String externalValue) {
+        for (VolumeState resourceState : values()) {
             if (resourceState.externalValue.equals(externalValue)) {
                 return resourceState;
             }
@@ -41,7 +41,7 @@ public enum VolumeGroupState {
 
     private final FsbFormat format;
 
-    VolumeGroupState(String externalValue, FsbFormat format) {
+    VolumeState(String externalValue, FsbFormat format) {
         this.externalValue = externalValue;
         this.format = format;
     }

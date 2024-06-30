@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,37 @@
 
 package de.hasait.teleport.service.zfs;
 
+import com.google.gson.Gson;
 import de.hasait.common.util.cli.CliExecutor;
+import de.hasait.common.util.cli.InheritPIOStrategy;
+import de.hasait.common.util.cli.WriteBytesPIOStrategy;
 import de.hasait.teleport.CliConfig;
-import de.hasait.teleport.api.CreateVolumeGroupTO;
+import de.hasait.teleport.api.CanResult;
 import de.hasait.teleport.api.StorageDriver;
+import de.hasait.teleport.api.VolumeTO;
+import de.hasait.teleport.domain.HasStorage;
+import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
-import de.hasait.teleport.domain.VolumeGroupState;
+import de.hasait.teleport.domain.VolumePO;
+import de.hasait.teleport.domain.VolumeRepository;
+import de.hasait.teleport.domain.VolumeSnapshotPO;
+import de.hasait.teleport.domain.VolumeSnapshotRepository;
+import de.hasait.teleport.domain.VolumeState;
+import de.hasait.teleport.service.SnapshotNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -43,14 +56,53 @@ import java.util.stream.Collectors;
 @Service
 public class ZfsDriver implements StorageDriver {
 
-     static final String DRIVER_ID = "zfs";
+    public static final String DRIVER_ID = "zfs";
 
-    private static final String RESOURCE_REGEX = "[^/]+";
-    private static final String RESOURCE_SNAPSHOT_REGEX = "(?<r>" + RESOURCE_REGEX + ")@(?<rs>[^/]+)";
-    private static final String VOLUME_REGEX = "(?<r>" + RESOURCE_REGEX + ")/v(?<v>\\d+)";
+    private static ZfsDriverConfig parseConfig(String config) {
+        ZfsDriverConfig zfsDriverConfig = new Gson().fromJson(config, ZfsDriverConfig.class);
+        String dataset = zfsDriverConfig.getDataset();
+        ZfsUtils.validateZfsDataset(dataset);
+        return zfsDriverConfig;
+    }
+
+    public static String determineZfsDataset(StoragePO storage) {
+        if (ZfsDriver.DRIVER_ID.equals(storage.getDriver())) {
+            ZfsDriverConfig zfsDriverConfig = parseConfig(storage.getDriverConfig());
+            return zfsDriverConfig.getDataset();
+        }
+        throw new IllegalArgumentException("Not a ZFS storage: " + storage);
+    }
+
+    public static String determineZfsVolume(VolumePO volume) {
+        return determineZfsVolume(volume.getStorage(), volume.getName());
+    }
+
+    public static String determineZfsVolume(StoragePO storage, String volumeName) {
+        return determineZfsDataset(storage) + "/" + volumeName;
+    }
+
+    public static String determineZfsObject(HasStorage hasStorage) {
+        if (hasStorage instanceof StoragePO storage) {
+            return determineZfsDataset(storage);
+        }
+        if (hasStorage instanceof VolumePO volume) {
+            return determineZfsVolume(volume);
+        }
+        if (hasStorage instanceof VolumeSnapshotPO snapshot) {
+            return determineZfsVolume(snapshot.getVolume()) + "@" + snapshot.getData().getName();
+        }
+        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
+    }
+
+    public static String determineZfsObject(HasStorage hasStorage, SnapshotData snapshotData) {
+        if (hasStorage instanceof VolumePO) {
+            return determineZfsObject(hasStorage) + "@" + snapshotData.getName();
+        }
+        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
+    }
+
+    private static final String VOLUME_REGEX = "(?<v>[^@]+)";
     private static final String VOLUME_SNAPSHOT_REGEX = "(?<rv>" + VOLUME_REGEX + ")@(?<vs>[^/]+)";
-    private static final Pattern RESOURCE_PATTERN = Pattern.compile(RESOURCE_REGEX);
-    private static final Pattern RESOURCE_SNAPSHOT_PATTERN = Pattern.compile(RESOURCE_SNAPSHOT_REGEX);
     private static final Pattern VOLUME_PATTERN = Pattern.compile(VOLUME_REGEX);
     private static final Pattern VOLUME_SNAPSHOT_PATTERN = Pattern.compile(VOLUME_SNAPSHOT_REGEX);
 
@@ -63,11 +115,11 @@ public class ZfsDriver implements StorageDriver {
         return LocalDateTime.ofEpochSecond(rawCreation, 0, ZoneOffset.UTC);
     }
 
-    private static VolumeGroupState parseZfsPropZrmanState(String raw) {
+    private static VolumeState parseZfsPropZrmanState(String raw) {
         if ("-".equals(raw)) {
             return null;
         }
-        return VolumeGroupState.valueOfExternalValue(raw);
+        return VolumeState.valueOfExternalValue(raw);
     }
 
     private static final ZfsProperty<String> ZFS_PROP___NAME = new ZfsProperty<>("name", Function.identity());
@@ -76,7 +128,7 @@ public class ZfsDriver implements StorageDriver {
     private static final ZfsProperty<Long> ZFS_PROP___VOLSIZE = new ZfsProperty<>("volsize", ZfsDriver::parseZfsPropAsOptionalLong);
     private static final ZfsProperty<Long> ZFS_PROP___USED = new ZfsProperty<>("used", ZfsDriver::parseZfsPropAsOptionalLong);
     private static final ZfsProperty<Long> ZFS_PROP___USED_BY_DATASET = new ZfsProperty<>("usedbydataset", ZfsDriver::parseZfsPropAsOptionalLong);
-    private static final ZfsProperty<VolumeGroupState> ZFS_PROP___ZRMAN___STATE = new ZfsProperty<>("zrman:state", ZfsDriver::parseZfsPropZrmanState);
+    private static final ZfsProperty<VolumeState> ZFS_PROP___ZRMAN___STATE = new ZfsProperty<>("zrman:state", ZfsDriver::parseZfsPropZrmanState);
     private static final List<ZfsProperty<?>> zfsProperties = List.of( //
             ZFS_PROP___NAME, //
             ZFS_PROP___CREATION, //
@@ -93,265 +145,292 @@ public class ZfsDriver implements StorageDriver {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final CliConfig cliConfig;
+    private final VolumeRepository volumeRepository;
+    private final VolumeSnapshotRepository volumeSnapshotRepository;
 
-    public ZfsDriver(@Autowired CliConfig cliConfig) {
+    public ZfsDriver(@Autowired CliConfig cliConfig, VolumeRepository volumeRepository, VolumeSnapshotRepository volumeSnapshotRepository) {
         this.cliConfig = cliConfig;
+        this.volumeRepository = volumeRepository;
+        this.volumeSnapshotRepository = volumeSnapshotRepository;
     }
 
     @Override
+    @Nonnull
     public String getId() {
         return DRIVER_ID;
     }
 
+    @Nonnull
     @Override
-    public void populateHypervisor(Hypervisor hypervisor, StorageBaseConfig config) {
-        String baseZfsDataset = Utils.expectString(config.driverSpecific, "dataset");
-        ZfsStorageBase base = getOrCreateZfsStorageBase(hypervisor, config, baseZfsDataset);
-        refreshBase(base, true);
+    public String getDescription() {
+        return "ZFS Storage Driver";
+    }
+
+    @Nullable
+    @Override
+    public String getDisabledReason() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public String validateConfig(@Nullable String config) {
+        try {
+            parseConfig(config);
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+        return null;
     }
 
     @Override
-    public void create(StoragePO storage, CreateVolumeGroupTO config) {
-        log.info("Creating VolumeGroup {} at {}...", config.getName(), storage);
+    public void populateHypervisor(HypervisorPO hypervisor, StoragePO storage) {
+        refreshStorage(storage);
+    }
+
+    @Override
+    public void create(StoragePO storage, VolumeTO config) {
+        log.info("Creating Volume {} at {}...", config.getName(), storage);
 
         CliExecutor exe = cliConfig.createCliConnector(storage);
 
-        List<String> zfsCreateResourceCommand = new ArrayList<>();
-        zfsCreateResourceCommand.add("zfs");
-        zfsCreateResourceCommand.add("create");
-        zfsCreateResourceCommand.add(ZfsUtils.determineZfsDataset(base, config.name));
-
-        boolean dryMode = !exe.executeAndWaitExit0(zfsCreateResourceCommand, 1, TimeUnit.MINUTES, true);
+        List<String> zfsCreateVolumeCommand = new ArrayList<>();
+        zfsCreateVolumeCommand.add("zfs");
+        zfsCreateVolumeCommand.add("create");
+        zfsCreateVolumeCommand.add("-o");
+        zfsCreateVolumeCommand.add("volmode=default");
+        zfsCreateVolumeCommand.add("-s");
+        zfsCreateVolumeCommand.add("-V");
+        zfsCreateVolumeCommand.add(config.getSizeBytes() + "");
+        zfsCreateVolumeCommand.add("-b");
+        zfsCreateVolumeCommand.add("128k");
+        zfsCreateVolumeCommand.add(determineZfsVolume(storage, config.getName()));
+        boolean dryMode = !exe.executeAndWaitExit0(zfsCreateVolumeCommand, 1, TimeUnit.MINUTES, true);
         if (dryMode) {
-            new Resource(base, config.name, VolumeGroupState.INACTIVE, 0, 0);
+            VolumePO volume = new VolumePO();
+            volume.setName(config.getName());
+            volume.setSizeBytes(config.getSizeBytes());
+            volume.setUsedBytes(0);
+            volume.setStorage(storage);
+            storage.getVolumes().add(volume);
         }
 
-        log.info("Resource {} created at {}", config.name, base);
+        log.info("Volume {} created at {}", config.getName(), storage);
 
         if (!dryMode) {
-            refreshBase((ZfsStorageBase) base, false);
-        }
-
-        Resource resource = base.getResourceContainer().getNotNull(config.name);
-
-        int number = 0;
-        for (int sizeMb : config.storage.sizesMb) {
-            List<String> zfsCreateVolumeCommand = new ArrayList<>();
-            zfsCreateVolumeCommand.add("zfs");
-            zfsCreateVolumeCommand.add("create");
-            zfsCreateVolumeCommand.add("-o");
-            zfsCreateVolumeCommand.add("volmode=default");
-            zfsCreateVolumeCommand.add("-s");
-            zfsCreateVolumeCommand.add("-V");
-            zfsCreateVolumeCommand.add(sizeMb + "M");
-            zfsCreateVolumeCommand.add("-b");
-            zfsCreateVolumeCommand.add("128k");
-            zfsCreateVolumeCommand.add(ZfsUtils.determineZfsVolume(resource, number));
-            exe.executeAndWaitExit0(zfsCreateVolumeCommand, 1, TimeUnit.MINUTES, true);
-            if (dryMode) {
-                new Volume(resource, number, sizeMb * 1024L * 1024L, 0);
-            }
-
-            log.info("Volume {} created for {}", number, resource);
-
-            number++;
-        }
-
-        if (!dryMode) {
-            refreshBase((ZfsStorageBase) base, false);
+            refreshStorage(storage);
         }
     }
 
     @Override
-    public CanResult canUpdate(Resource resource) {
-        if (resource.isActive()) {
-            return CanResult.invalid("Resource " + resource + " is active");
+    public CanResult canUpdate(VolumePO volume, VolumeTO config) {
+        if (volume.isActive()) {
+            return CanResult.invalid("Volume " + volume + " is active");
+        }
+        if (!volume.getName().equals(config.getName())) {
+            return CanResult.invalid("Config name mismatch: " + config.getName() + " vs. " + volume.getName());
         }
 
-        for (Volume volume : resource.getVolumeContainer()) {
-            Long cfgSizeBytes = volume.determineCfgSizeBytes();
-            if (cfgSizeBytes != null && cfgSizeBytes != volume.getSizeBytes()) {
-                return CanResult.valid();
-            }
+        if (config.getSizeBytes() != volume.getSizeBytes()) {
+            return CanResult.valid();
         }
 
-        return CanResult.hasNoEffect("Resource " + resource + " already up-to-date");
+        return CanResult.hasNoEffect("Volume " + volume + " already up-to-date");
     }
 
     @Override
-    public boolean update(Resource resource) {
-        CanResult canResult = canUpdate(resource);
+    public boolean update(VolumePO volume, VolumeTO config) {
+        CanResult canResult = canUpdate(volume, config);
         if (canResult.ensureValidAndReturnHasNoEffect()) {
             return false;
         }
 
-        activate(resource);
+        boolean dryMode = cliConfig.isDryMode();
 
-        CliExecutor exe = cliConfig.createCliConnector(resource);
+        activate(volume);
 
-        for (Volume volume : resource.getVolumeContainer()) {
-            Long cfgSizeBytes = volume.determineCfgSizeBytes();
-            if (cfgSizeBytes != null && cfgSizeBytes != volume.getSizeBytes()) {
-                List<String> zfsCreateVolumeCommand = new ArrayList<>();
-                zfsCreateVolumeCommand.add("zfs");
-                zfsCreateVolumeCommand.add("set");
-                zfsCreateVolumeCommand.add("volsize=" + cfgSizeBytes);
-                zfsCreateVolumeCommand.add("volmode=default");
-                zfsCreateVolumeCommand.add(ZfsUtils.determineZfsVolume(volume));
-                boolean dryMode = !exe.executeAndWaitExit0(zfsCreateVolumeCommand, 1, TimeUnit.MINUTES, true);
-                if (dryMode) {
-                    volume.setSizeBytes(cfgSizeBytes);
-                }
+        CliExecutor exe = cliConfig.createCliConnector(volume);
 
-                log.info("Volume {} updated", volume);
+        if (config.getSizeBytes() != volume.getSizeBytes()) {
+            List<String> zfsCreateVolumeCommand = new ArrayList<>();
+            zfsCreateVolumeCommand.add("zfs");
+            zfsCreateVolumeCommand.add("set");
+            zfsCreateVolumeCommand.add("volsize=" + config.getSizeBytes());
+            zfsCreateVolumeCommand.add("volmode=default");
+            zfsCreateVolumeCommand.add(determineZfsVolume(volume));
+            exe.executeAndWaitExit0(zfsCreateVolumeCommand, 1, TimeUnit.MINUTES, true);
+            if (dryMode) {
+                volume.setSizeBytes(config.getSizeBytes());
+                volumeRepository.save(volume);
             }
+
+            log.info("Volume {} updated", volume);
         }
 
-        deactivate(resource);
+        if (!dryMode) {
+            refreshVolume(volume);
+        }
+
+        deactivate(volume);
 
         return true;
     }
 
     @Override
-    public String determineDevice(Volume volume) {
-        return ZfsUtils.determineDevice(volume);
+    public String determineDevice(VolumePO volume) {
+        return "/dev/zvol/" + determineZfsVolume(volume);
     }
 
     @Override
-    public void activate(Resource resource) {
-        changeVolumeGroupState(resource, VolumeGroupState.ACTIVE, false);
+    public void activate(VolumePO volume) {
+        changeVolumeState(volume, VolumeState.ACTIVE, false);
     }
 
     @Override
-    public void deactivate(Resource resource) {
+    public void deactivate(VolumePO volume) {
         // this check is needed to prevent changing INACTIVE to DIRTY
-        if (!resource.isActive()) {
-            throw new IllegalStateException("Resource is not active: " + resource);
+        if (!volume.isActive()) {
+            throw new IllegalStateException("Volume is not active: " + volume);
         }
 
-        changeVolumeGroupState(resource, VolumeGroupState.DIRTY, true);
+        changeVolumeState(volume, VolumeState.DIRTY, true);
     }
 
     @Override
-    public void delete(Resource resource) {
-        if (resource.isActiveOrDirty()) {
-            throw new IllegalStateException("Resource is active or dirty: " + resource);
+    public void delete(VolumePO volume) {
+        if (volume.isActiveOrDirty()) {
+            throw new IllegalStateException("Volume is active or dirty: " + volume);
         }
 
-        log.info("Deleting Resource {}...", resource);
+        log.info("Deleting Volume {}...", volume);
 
-        CliExecutor exe = cliConfig.createCliConnector(resource);
+        StoragePO storage = volume.getStorage();
+
+        CliExecutor exe = cliConfig.createCliConnector(volume);
 
         List<String> zfsDestroyCommand = new ArrayList<>();
         zfsDestroyCommand.add("zfs");
         zfsDestroyCommand.add("destroy");
-        zfsDestroyCommand.add("-r");
-        zfsDestroyCommand.add(ZfsUtils.determineZfsObject(resource));
+        zfsDestroyCommand.add(determineZfsObject(volume));
 
         boolean dryMode = !exe.executeAndWaitExit0(zfsDestroyCommand, 5, TimeUnit.MINUTES, true);
         if (dryMode) {
-            resource.getParent().getResourceContainer().remove(resource);
+            storage.getVolumes().remove(volume);
+            volumeRepository.delete(volume);
         }
 
-        log.info("Resource {} deleted", resource);
+        log.info("Volume {} deleted", volume);
 
         if (!dryMode) {
-            refreshBase((ZfsStorageBase) resource.getBase(), true);
+            refreshStorage(storage);
         }
     }
 
     @Override
-    public boolean forceVolumeGroupState(Resource resource, VolumeGroupState state) {
+    public boolean forceState(VolumePO volume, VolumeState state) {
         if (state == null) {
             throw new NullPointerException("state");
         }
-        if (resource.getState() == state) {
+        if (volume.getState() == state) {
             return false;
         }
-        if (state == VolumeGroupState.ACTIVE) {
-            activate(resource);
+        if (state == VolumeState.ACTIVE) {
+            activate(volume);
         } else {
-            changeVolumeGroupState(resource, state, true);
+            changeVolumeState(volume, state, true);
         }
         return true;
     }
 
     @Override
-    public void takeSnapshot(Resource resource, SnapshotData snapshotData) {
-        String snapshotFullName = resource + "@" + snapshotData.getName();
-        if (resource.getSnapshotContainer().containsKey(snapshotData.getName())) {
-            throw new RuntimeException("Snapshot already exists: " + snapshotFullName);
+    public void takeSnapshot(SnapshotData snapshotData, VolumePO... volumes) {
+        StoragePO storage = null;
+        List<String> zfsObjects = new ArrayList<>();
+
+        for (VolumePO volume : volumes) {
+            String snapshotFullName = volume + "@" + snapshotData.getName();
+            if (volume.findSnapshotByName(snapshotData.getName()).isPresent()) {
+                throw new RuntimeException("Snapshot already exists: " + snapshotFullName);
+            }
+
+            if (volume.isActive() && snapshotData.isConsistent()) {
+                throw new IllegalArgumentException("Cannot create consistent Snapshot for active Volume: " + snapshotFullName);
+            }
+            if (volume.isDirtyOrInactive() && !snapshotData.isConsistent()) {
+                throw new IllegalArgumentException("Snapshot is marked as inconsistent although Volume is not active: " + snapshotFullName);
+            }
+
+            if (storage == null) {
+                storage = volume.getStorage();
+            } else if (storage != volume.getStorage()) {
+                throw new IllegalArgumentException("Cannot take atomic snapshot across different storages: " + snapshotFullName + " vs. " + storage);
+            }
         }
 
-        if (resource.isActive() && snapshotData.isConsistent()) {
-            throw new IllegalArgumentException("Cannot create consistent Snapshot for active Resource: " + snapshotFullName);
-        }
-        if (resource.isDirtyOrInactive() && !snapshotData.isConsistent()) {
-            throw new IllegalArgumentException("Snapshot is marked as inconsistent although Resource is not active: " + snapshotFullName);
+        for (VolumePO volume : volumes) {
+            String snapshotFullName = volume + "@" + snapshotData.getName();
+
+            if (volume.isInactive()) {
+                log.warn("Taking Snapshot {} of inactive Volume...", snapshotFullName);
+            } else {
+                log.info("Taking Snapshot {}...", snapshotFullName);
+            }
+
+            zfsObjects.add(determineZfsObject(volume, snapshotData));
         }
 
-        if (resource.isInactive()) {
-            log.warn("Taking recursive Snapshot {} of inactive Resource...", snapshotFullName);
-        } else {
-            log.info("Taking recursive Snapshot {}...", snapshotFullName);
+        if (storage == null) {
+            throw new IllegalArgumentException("Could not determine storage for volumes: " + volumes);
         }
 
-        CliExecutor exe = cliConfig.createCliConnector(resource);
+        CliExecutor exe = cliConfig.createCliConnector(storage);
 
         List<String> zfsSnapshotCommand = new ArrayList<>();
         zfsSnapshotCommand.add("zfs");
         zfsSnapshotCommand.add("snapshot");
-        zfsSnapshotCommand.add("-r");
-        zfsSnapshotCommand.add(ZfsUtils.determineZfsObject(resource, snapshotData));
+        zfsSnapshotCommand.addAll(zfsObjects);
 
         boolean dryMode = !exe.executeAndWaitExit0(zfsSnapshotCommand, 30, TimeUnit.SECONDS, true);
         if (dryMode) {
             LocalDateTime creation = LocalDateTime.now();
-            new ResourceSnapshot(resource, snapshotData.getName(), 0, creation);
-            resource.getVolumeContainer().forEach(volume -> new VolumeSnapshot(volume, snapshotData.getName(), 0, creation));
-        }
-
-        log.info("Snapshot {} recursively created", snapshotFullName);
-
-        if (resource.getState() == VolumeGroupState.DIRTY) {
-            changeVolumeGroupState(resource, VolumeGroupState.INACTIVE, null);
-        } else {
-            if (!dryMode) {
-                refreshResource(resource, false);
+            for (VolumePO volume : volumes) {
+                new VolumeSnapshotPO(volume, snapshotData.getName(), 0, creation);
             }
         }
-    }
 
-    @Override
-    public void deleteSnapshot(ResourceSnapshot snapshot) {
-        deleteSnapshot(snapshot, true);
-        for (Volume volume : snapshot.getTarget().getVolumeContainer()) {
-            VolumeSnapshot volumeSnapshot = volume.getSnapshotContainer().get(snapshot.getName());
-            if (volumeSnapshot != null) {
-                deleteSnapshot(volumeSnapshot, true);
-            }
-        }
-        if (!cliConfig.isDryMode()) {
-            refreshResource(snapshot.getTarget(), true);
+        log.info("Snapshots {} created", zfsObjects);
+
+        if (!dryMode) {
+            refreshStorage(storage);
         }
     }
 
     @Override
-    public void syncResourceIncr(ResourceSnapshot sender, ResourceSnapshot receiver) {
-        syncIncr(sender, receiver, () -> {
-            new ResourceSnapshot(receiver.getTarget(), sender.getName(), sender.getUsed(), LocalDateTime.now());
-        });
+    public void deleteSnapshot(VolumeSnapshotPO snapshot) {
+        log.info("Deleting Snapshot {}...", snapshot);
+
+        CliExecutor exe = cliConfig.createCliConnector(snapshot);
+
+        List<String> zfsSnapshotCommand = new ArrayList<>();
+        zfsSnapshotCommand.add("zfs");
+        zfsSnapshotCommand.add("destroy");
+        zfsSnapshotCommand.add(determineZfsObject(snapshot));
+
+        boolean dryMode = !exe.executeAndWaitExit0(zfsSnapshotCommand, 30, TimeUnit.SECONDS, true);
+        if (dryMode) {
+            snapshot.getVolume().getSnapshots().remove(snapshot);
+        }
+
+        log.info("Snapshot {} deleted", snapshot);
+
+        if (!dryMode) {
+            refreshVolume(snapshot.obtainVolume());
+        }
     }
 
     @Override
-    public void syncVolumeIncr(VolumeSnapshot sender, VolumeSnapshot receiver) {
-        syncIncr(sender, receiver, () -> {
-            new VolumeSnapshot(receiver.getTarget(), sender.getName(), sender.getUsed(), LocalDateTime.now());
-        });
-    }
-
-    private <PP extends HasSnapshots<PP, P, S>, P extends AbstractSnapshotContainer<PP, P, S>, S extends AbstractSnapshot<PP, P, S>> void syncIncr(S sender, S receiver, Runnable dryModeLogic) {
-        var senderCommon = sender.getParent().getNotNull(receiver.getName());
+    public void syncVolumeIncr(VolumeSnapshotPO sender, VolumeSnapshotPO receiver) {
+        VolumeSnapshotPO senderCommon = sender.getVolume().findSnapshotByName(receiver.getData().getName()).orElseThrow();
 
         log.info("Incremental syncing Snapshot {} -> {}...", sender, receiver);
 
@@ -359,12 +438,12 @@ public class ZfsDriver implements StorageDriver {
 
         StringBuilder bashZfsPipe = new StringBuilder();
         bashZfsPipe.append("zfs send -c -v -i");
-        bashZfsPipe.append(" '").append(ZfsUtils.determineZfsObject(senderCommon)).append("'");
-        bashZfsPipe.append(" '").append(ZfsUtils.determineZfsObject(sender)).append("'");
+        bashZfsPipe.append(" '").append(determineZfsObject(senderCommon)).append("'");
+        bashZfsPipe.append(" '").append(determineZfsObject(sender)).append("'");
         bashZfsPipe.append(" | ");
         cliConfig.appendSsh(sender, receiver, bashZfsPipe);
         bashZfsPipe.append("zfs recv -F -v");
-        bashZfsPipe.append(" '").append(ZfsUtils.determineZfsObject(receiver.getTarget())).append("'");
+        bashZfsPipe.append(" '").append(determineZfsObject(receiver.getVolume())).append("'");
 
         List<String> bashCommand = new ArrayList<>();
         bashCommand.add("bash");
@@ -372,46 +451,29 @@ public class ZfsDriver implements StorageDriver {
 
         boolean dryMode = !exe.executeAndWaitExit0(bashCommand, new WriteBytesPIOStrategy(bashZfsPipe.toString()), InheritPIOStrategy.INSTANCE, InheritPIOStrategy.INSTANCE, Long.MAX_VALUE, TimeUnit.MILLISECONDS, true);
         if (dryMode) {
-            dryModeLogic.run();
+            new VolumeSnapshotPO(receiver.getVolume(), sender.getData().getName(), sender.getUsedBytes(), LocalDateTime.now());
         }
 
         log.info("Incremental sync completed: {} -> {}", sender, receiver);
 
         if (!dryMode) {
-            refreshResource(receiver.getTarget().getResource(), false);
+            refreshVolume(receiver.obtainVolume());
         }
     }
 
     @Override
-    public void syncResourceFull(ResourceSnapshot sender, AbstractStorageBase receiver) {
-        syncFull(sender, (ZfsStorageBase) receiver, () -> {
-            Resource senderResource = sender.getTarget();
-            Resource receiverResource = new Resource(receiver, senderResource.getName(), VolumeGroupState.INACTIVE, senderResource.getAvailBytes(), senderResource.getUsedBytes());
-            new ResourceSnapshot(receiverResource, sender.getName(), sender.getUsed(), LocalDateTime.now());
-        });
-    }
-
-    @Override
-    public void syncVolumeFull(VolumeSnapshot sender, Resource receiver) {
-        syncFull(sender, (ZfsStorageBase) receiver.getBase(), () -> {
-            Volume senderVolume = sender.getTarget();
-            Volume receiverVolume = new Volume(receiver, senderVolume.getNumber(), senderVolume.getSizeBytes(), senderVolume.getUsedBytes());
-            new VolumeSnapshot(receiverVolume, sender.getName(), sender.getUsed(), LocalDateTime.now());
-        });
-    }
-
-    private <PP extends HasSnapshots<PP, P, S>, P extends AbstractSnapshotContainer<PP, P, S>, S extends AbstractSnapshot<PP, P, S>> void syncFull(S sender, ZfsStorageBase receiver, Runnable dryModeLogic) {
-        log.info("Full syncing Snapshot {} -> {}...", sender, receiver);
+    public void syncVolumeFull(VolumeSnapshotPO sender, StoragePO receiverStorage, String receiverVolumeName) {
+        log.info("Full syncing Snapshot {} -> {} as {}...", sender, receiverStorage, receiverVolumeName);
 
         CliExecutor sexe = cliConfig.createCliConnector(sender);
 
         StringBuilder bashZfsPipe = new StringBuilder();
         bashZfsPipe.append("zfs send -c -v");
-        bashZfsPipe.append(" '").append(ZfsUtils.determineZfsObject(sender)).append("'");
+        bashZfsPipe.append(" '").append(determineZfsObject(sender)).append("'");
         bashZfsPipe.append(" | ");
-        cliConfig.appendSsh(sender, receiver, bashZfsPipe);
+        cliConfig.appendSsh(sender, receiverStorage, bashZfsPipe);
         bashZfsPipe.append("zfs recv -v");
-        bashZfsPipe.append(" '").append(ZfsUtils.determineZfsObjectForOtherBase(sender.getTarget(), receiver)).append("'");
+        bashZfsPipe.append(" '").append(determineZfsVolume(receiverStorage, receiverVolumeName)).append("'");
 
         List<String> bashCommand = new ArrayList<>();
         bashCommand.add("bash");
@@ -419,46 +481,36 @@ public class ZfsDriver implements StorageDriver {
 
         boolean dryMode = !sexe.executeAndWaitExit0(bashCommand, new WriteBytesPIOStrategy(bashZfsPipe.toString()), InheritPIOStrategy.INSTANCE, InheritPIOStrategy.INSTANCE, Long.MAX_VALUE, TimeUnit.MILLISECONDS, true);
         if (dryMode) {
-            dryModeLogic.run();
+            VolumePO senderVolume = sender.getVolume();
+            VolumePO receiverVolume = new VolumePO(receiverStorage, receiverVolumeName, senderVolume.getSizeBytes(), VolumeState.INACTIVE, senderVolume.getUsedBytes());
+            new VolumeSnapshotPO(receiverVolume, sender.getData().getName(), sender.getUsedBytes(), LocalDateTime.now());
         }
 
-        log.info("Full sync completed: {} -> {}", sender, receiver);
+        log.info("Full sync completed: {} -> {} as {}", sender, receiverStorage, receiverVolumeName);
 
         if (!dryMode) {
-            refreshBase(receiver, false);
+            refreshStorage(receiverStorage);
         }
     }
 
-    private void refreshBase(ZfsStorageBase base, boolean clear) {
-        if (clear) {
-            base.getResourceContainer().clear();
-        }
-        refresh(base, base.getZfsDataset());
+    private void refreshStorage(StoragePO storage) {
+        refresh(storage, determineZfsDataset(storage));
+        // TODO remove objects not found during refresh
     }
 
-    private void refreshResource(Resource resource, boolean clear) {
-        if (clear) {
-            resource.getVolumeContainer().clear();
-            resource.getSnapshotContainer().clear();
-        }
-        ZfsStorageBase base = (ZfsStorageBase) resource.getBase();
-        String zfsDataset = ZfsUtils.determineZfsDataset(resource);
-        refresh(base, zfsDataset);
+    private void refreshVolume(VolumePO volume) {
+        StoragePO storage = volume.getStorage();
+        refresh(storage, determineZfsVolume(volume));
+        // TODO remove objects not found during refresh
     }
 
-    private void refresh(ZfsStorageBase base, String zfsDataset) {
-        CliExecutor exe = cliConfig.createCliConnector(base);
+    private void refresh(StoragePO storage, String zfsObject) {
+        CliExecutor exe = cliConfig.createCliConnector(storage);
 
-        ZfsUtils.zfsListAll(exe, zfsDataset, zfsPropertiesCsv, line -> processListLine(base, line));
-        ZfsUtils.zfsGetR(exe, zfsDataset, line -> processGetLine(base, line));
+        ZfsUtils.zfsListAll(exe, zfsObject, zfsPropertiesCsv, line -> processListLine(storage, line));
     }
 
-    private ZfsStorageBase getOrCreateZfsStorageBase(Hypervisor hypervisor, StorageBaseConfig config, String baseZfsDataset) {
-        ZfsUtils.validateZfsDataset(baseZfsDataset);
-        return new ZfsStorageBase(hypervisor, this, baseZfsDataset, config);
-    }
-
-    private void processListLine(ZfsStorageBase base, String line) {
+    private void processListLine(StoragePO storage, String line) {
         try {
             Map<String, Object> properties = new LinkedHashMap<>();
 
@@ -468,48 +520,57 @@ public class ZfsDriver implements StorageDriver {
                 zfsProperty.putInto(properties, tokens[i++]);
             }
 
-            String baseZfsDataset = base.getZfsDataset();
+            String storageZfsDataset = determineZfsDataset(storage);
             String zfsObject = ZFS_PROP___NAME.getFrom(properties);
 
-            if (zfsObject.equals(baseZfsDataset)) {
+            if (zfsObject.equals(storageZfsDataset)) {
                 return;
             }
 
-            if (!zfsObject.startsWith(baseZfsDataset + "/")) {
-                throw new IllegalArgumentException("Invalid ZFS object: " + zfsObject + " vs. base " + baseZfsDataset);
+            if (!zfsObject.startsWith(storageZfsDataset + "/")) {
+                throw new IllegalArgumentException("Invalid ZFS object: " + zfsObject + " vs. storage " + storageZfsDataset);
             }
 
-            String remaining = zfsObject.substring(baseZfsDataset.length() + 1);
+            String remaining = zfsObject.substring(storageZfsDataset.length() + 1);
 
             Matcher volumeSnapshotMatcher = VOLUME_SNAPSHOT_PATTERN.matcher(remaining);
             if (volumeSnapshotMatcher.matches()) {
-                Resource resource = base.getResourceContainer().getNotNull(volumeSnapshotMatcher.group("r"));
-                int number = Integer.parseInt(volumeSnapshotMatcher.group("v"));
-                Volume volume = resource.getVolumeContainer().getNotNull(number);
-                String name = volumeSnapshotMatcher.group("vs");
-                if (SnapshotNameGenerator.NAME_PATTERN.matcher(name).matches()) {
-                    VolumeSnapshot existingSnapshot = volume.getSnapshotContainer().get(name);
-                    VolumeSnapshot snapshot;
-                    Long used = ZFS_PROP___USED.getFrom(properties);
-                    if (existingSnapshot != null) {
-                        existingSnapshot.setUsed(used);
-                        snapshot = existingSnapshot;
-                    } else {
-                        LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
-                        snapshot = new VolumeSnapshot(volume, name, used, creation);
+                String volumeName = volumeSnapshotMatcher.group("v");
+                VolumePO volume = storage.findVolumeByName(volumeName).orElseThrow();
+                String snapshotName = volumeSnapshotMatcher.group("vs");
+                if (SnapshotNameGenerator.NAME_PATTERN.matcher(snapshotName).matches()) {
+                    VolumeSnapshotPO existingSnapshot = volume.findSnapshotByName(snapshotName).orElse(null);
+                    VolumeSnapshotPO snapshot;
+                    LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
+                    if (creation == null) {
+                        throw new IllegalArgumentException("creation missing");
                     }
+                    Long used = ZFS_PROP___USED.getFrom(properties);
+                    if (used == null) {
+                        throw new IllegalArgumentException("used missing");
+                    }
+                    if (existingSnapshot != null) {
+                        snapshot = existingSnapshot;
+                        snapshot.getData().setCreation(creation);
+                    } else {
+                        snapshot = new VolumeSnapshotPO();
+                        snapshot.setVolume(volume);
+                        snapshot.setData(new SnapshotData(snapshotName, creation));
+                    }
+                    snapshot.setUsedBytes(used);
+                    volumeSnapshotRepository.save(snapshot);
                     return;
                 }
                 // foreign snapshot ignored;
-                log.warn("Ignored foreign snapshot: {}", name);
+                log.warn("Ignored foreign snapshot: {}", snapshotName);
                 return;
             }
+
             Matcher volumeMatcher = VOLUME_PATTERN.matcher(remaining);
             if (volumeMatcher.matches()) {
-                Resource resource = base.getResourceContainer().getNotNull(volumeMatcher.group("r"));
-                int number = Integer.parseInt(volumeMatcher.group("v"));
-                Volume existingVolume = resource.getVolumeContainer().get(number);
-                Volume volume;
+                String volumeName = volumeSnapshotMatcher.group("v");
+                VolumePO existingVolume = storage.findVolumeByName(volumeName).orElse(null);
+                VolumePO volume;
                 Long volsize = ZFS_PROP___VOLSIZE.getFrom(properties);
                 Long usedbydataset = ZFS_PROP___USED_BY_DATASET.getFrom(properties);
                 if (volsize == null) {
@@ -519,52 +580,15 @@ public class ZfsDriver implements StorageDriver {
                     throw new IllegalArgumentException("usedbydataset missing");
                 }
                 if (existingVolume != null) {
-                    existingVolume.setSizeBytes(volsize);
-                    existingVolume.setUsedBytes(usedbydataset);
                     volume = existingVolume;
                 } else {
-                    volume = new Volume(resource, number, volsize, usedbydataset);
+                    volume = new VolumePO();
+                    volume.setStorage(storage);
+                    volume.setName(volumeName);
                 }
-                return;
-            }
-            Matcher resourceSnapshotMatcher = RESOURCE_SNAPSHOT_PATTERN.matcher(remaining);
-            if (resourceSnapshotMatcher.matches()) {
-                Resource resource = base.getResourceContainer().getNotNull(resourceSnapshotMatcher.group("r"));
-                String name = resourceSnapshotMatcher.group("rs");
-                if (SnapshotNameGenerator.NAME_PATTERN.matcher(name).matches()) {
-                    ResourceSnapshot existingSnapshot = resource.getSnapshotContainer().get(name);
-                    ResourceSnapshot snapshot;
-                    Long used = ZFS_PROP___USED.getFrom(properties);
-                    if (existingSnapshot != null) {
-                        existingSnapshot.setUsed(used);
-                        snapshot = existingSnapshot;
-                    } else {
-                        LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
-                        snapshot = new ResourceSnapshot(resource, name, used, creation);
-                    }
-                    return;
-                }
-                // foreign snapshot ignored;
-                log.warn("Ignored foreign snapshot: {}", name);
-                return;
-            }
-            if (RESOURCE_PATTERN.matcher(remaining).matches()) {
-                Resource existingResource = base.getResourceContainer().get(remaining);
-                VolumeGroupState resourceState = Optional.ofNullable(ZFS_PROP___ZRMAN___STATE.getFrom(properties)).orElse(VolumeGroupState.INACTIVE);
-                Resource resource;
-                Long used = ZFS_PROP___USED.getFrom(properties);
-                Long available = ZFS_PROP___AVAILABLE.getFrom(properties);
-                if (available == null) {
-                    throw new IllegalArgumentException("available missing");
-                }
-                if (existingResource != null) {
-                    existingResource.setState(resourceState);
-                    existingResource.setAvailBytes(available);
-                    existingResource.setUsedBytes(used);
-                    resource = existingResource;
-                } else {
-                    resource = new Resource(base, remaining, resourceState, available, used);
-                }
+                volume.setSizeBytes(volsize);
+                volume.setUsedBytes(usedbydataset);
+                volumeRepository.save(volume);
                 return;
             }
 
@@ -574,49 +598,14 @@ public class ZfsDriver implements StorageDriver {
         }
     }
 
-    private void processGetLine(ZfsStorageBase base, String line) {
-        try {
-            String baseZfsDataset = base.getZfsDataset();
-
-            String[] tokens = line.split("\t");
-
-            int tokenI = 0;
-            String zfsObject = tokens[tokenI++];
-            String property = tokens[tokenI++];
-            String value = tokens[tokenI++];
-
-            if (zfsObject.equals(baseZfsDataset)) {
-                return;
-            }
-
-            if (!zfsObject.startsWith(baseZfsDataset + "/")) {
-                throw new IllegalArgumentException("Invalid ZFS object: " + zfsObject + " vs. base " + baseZfsDataset);
-            }
-
-            String remaining = zfsObject.substring(baseZfsDataset.length() + 1);
-            Resource existingResource = base.getResourceContainer().get(remaining);
-            if (existingResource != null) {
-                if (property.startsWith(ZFS_PROP_NAME_PREFIX___ZRMAN___LAST_SNAP_ON)) {
-                    String hvName = property.substring(ZFS_PROP_NAME_PREFIX___ZRMAN___LAST_SNAP_ON.length());
-                    existingResource.setLatestSnapshotNameOnHv(hvName, value);
-                    return;
-                }
-            }
-
-            log.debug("processGetLine - ignored: {}, {}, {}", zfsObject, property, value);
-        } catch (RuntimeException e) {
-            throw new IllegalArgumentException("Cannot process line: " + line, e);
-        }
-    }
-
-    private void changeVolumeGroupState(Resource resource, VolumeGroupState newState, Boolean readonly) {
-        if (resource.getState() == newState) {
-            throw new IllegalStateException("Resource is already " + newState + ": " + resource);
+    private void changeVolumeState(VolumePO volume, VolumeState newState, Boolean readonly) {
+        if (volume.getState() == newState) {
+            throw new IllegalStateException("Volume is already " + newState + ": " + volume);
         }
 
-        log.info("Changing state of Resource {} to {}...", resource, newState);
+        log.info("Changing state of Volume {} to {}...", volume, newState);
 
-        CliExecutor exe = cliConfig.createCliConnector(resource);
+        CliExecutor exe = cliConfig.createCliConnector(volume);
 
         List<String> zfsSetCommand = new ArrayList<>();
         zfsSetCommand.add("zfs");
@@ -625,61 +614,17 @@ public class ZfsDriver implements StorageDriver {
             zfsSetCommand.add("readonly=" + (readonly ? "on" : "off"));
         }
         zfsSetCommand.add(ZFS_PROP___ZRMAN___STATE.getName() + "=" + newState.getExternalValue());
-        zfsSetCommand.add(ZfsUtils.determineZfsObject(resource));
+        zfsSetCommand.add(determineZfsVolume(volume));
 
         boolean dryMode = !exe.executeAndWaitExit0(zfsSetCommand, 1, TimeUnit.MINUTES, true);
         if (dryMode) {
-            resource.setState(newState);
+            volume.setState(newState);
         }
 
-        log.info("Resource {} set to {}", resource, newState);
+        log.info("Volume {} set to {}", volume, newState);
 
         if (!dryMode) {
-            refreshResource(resource, false);
-        }
-    }
-
-    public <PP extends HasSnapshots<PP, P, S>, P extends AbstractSnapshotContainer<PP, P, S>, S extends AbstractSnapshot<PP, P, S>> void deleteSnapshot(S snapshot, boolean skipRefresh) {
-        log.info("Deleting Snapshot {}...", snapshot);
-
-        CliExecutor exe = cliConfig.createCliConnector(snapshot);
-
-        List<String> zfsSnapshotCommand = new ArrayList<>();
-        zfsSnapshotCommand.add("zfs");
-        zfsSnapshotCommand.add("destroy");
-        zfsSnapshotCommand.add(ZfsUtils.determineZfsObject(snapshot));
-
-        boolean dryMode = !exe.executeAndWaitExit0(zfsSnapshotCommand, 30, TimeUnit.SECONDS, true);
-        if (dryMode) {
-            snapshot.getParent().remove(snapshot);
-        }
-
-        log.info("Snapshot {} deleted", snapshot);
-
-        if (!dryMode && !skipRefresh) {
-            refreshResource(snapshot.getTarget().getResource(), true);
-        }
-    }
-
-    @Override
-    public void storeLastUsedSnapshot(Resource resource, String hvName, String snapshotName) {
-        CliExecutor exe = cliConfig.createCliConnector(resource);
-
-        List<String> zfsSetCommand = new ArrayList<>();
-        zfsSetCommand.add("zfs");
-        zfsSetCommand.add("set");
-        zfsSetCommand.add(ZFS_PROP_NAME_PREFIX___ZRMAN___LAST_SNAP_ON + hvName + "=" + snapshotName);
-        zfsSetCommand.add(ZfsUtils.determineZfsObject(resource));
-
-        boolean dryMode = !exe.executeAndWaitExit0(zfsSetCommand, 1, TimeUnit.MINUTES, true);
-        if (dryMode) {
-            resource.setLatestSnapshotNameOnHv(hvName, snapshotName);
-        }
-
-        log.debug("Set last used snapshot for Resource {} to {}", resource, snapshotName);
-
-        if (!dryMode) {
-            refreshResource(resource, false);
+            refreshVolume(volume);
         }
     }
 

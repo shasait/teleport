@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@
 package de.hasait.teleport;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
+import com.vaadin.flow.spring.annotation.EnableVaadin;
 import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "de.hasait")
+@ComponentScan(basePackages = {"de.hasait.common", "de.hasait.teleport"})
+@EnableVaadin(value = {"de.hasait.common", "de.hasait.teleport"})
 @Theme(value = "teleport")
 public class Application implements AppShellConfigurator {
-
-    public static final String TITLE = "Teleport";
 
     public static void main(String[] mainArgs) {
         SpringApplication.run(Application.class, mainArgs);

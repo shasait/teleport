@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,23 @@
 
 package de.hasait.teleport.api;
 
+import de.hasait.common.service.Provider;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
-import de.hasait.teleport.domain.VolumeGroupPO;
-import de.hasait.teleport.domain.VolumeGroupSnapshotPO;
-import de.hasait.teleport.domain.VolumeGroupState;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeSnapshotPO;
+import de.hasait.teleport.domain.VolumeState;
 
-public interface StorageDriver {
-
-    String getId();
+public interface StorageDriver extends Provider {
 
     void populateHypervisor(HypervisorPO hypervisor, StoragePO storage);
 
-    void create(StoragePO storage, CreateVolumeGroupTO config);
+    void create(StoragePO storage, VolumeTO config);
 
-    CanResult canUpdate(VolumeGroupPO volumeGroup);
+    CanResult canUpdate(VolumePO volume, VolumeTO config);
 
-    boolean update(VolumeGroupPO volumeGroup);
+    boolean update(VolumePO volume, VolumeTO config);
 
     /**
      * Return device path for attaching to a {@link de.hasait.teleport.domain.VirtualMachinePO}.
@@ -43,41 +40,37 @@ public interface StorageDriver {
     String determineDevice(VolumePO volume);
 
     /**
-     * Change state to {@link VolumeGroupState#ACTIVE} and make writable.
+     * Change state to {@link VolumeState#ACTIVE} and make writable.
      */
-    void activate(VolumeGroupPO volumeGroup);
+    void activate(VolumePO volume);
 
     /**
-     * Change state to {@link VolumeGroupState#DIRTY} and set to readonly.
+     * Change state to {@link VolumeState#DIRTY} and set to readonly.
      */
-    void deactivate(VolumeGroupPO volumeGroup);
+    void deactivate(VolumePO volume);
 
     /**
-     * Delete resource AND volumes.
+     * Delete volume.
      */
-    void delete(VolumeGroupPO volumeGroup);
+    void delete(VolumePO volume);
 
     /**
      * Forcefully change state of resource without any validation.
      */
-    boolean forceResourceState(VolumeGroupPO volumeGroup, VolumeGroupState state);
+    boolean forceState(VolumePO volume, VolumeState state);
 
     /**
-     * Atomically create {@link VolumeGroupSnapshotPO} and {@link VolumeSnapshotPO}s.
+     * Atomically create {@link VolumeSnapshotPO}s.
      */
-    void takeSnapshot(VolumeGroupPO volumeGroup, SnapshotData snapshotData);
+    void takeSnapshot(SnapshotData snapshotData, VolumePO... volumes);
 
     /**
-     * Delete {@link VolumeGroupSnapshotPO} and corresponding {@link VolumeSnapshotPO}s.
+     * Delete {@link VolumeSnapshotPO}.
      */
-    void deleteSnapshot(VolumeGroupSnapshotPO snapshot);
-
-    void syncResourceIncr(VolumeGroupSnapshotPO sender, VolumeGroupSnapshotPO receiver);
+    void deleteSnapshot(VolumeSnapshotPO snapshot);
 
     void syncVolumeIncr(VolumeSnapshotPO sender, VolumeSnapshotPO receiver);
 
-    void syncResourceFull(VolumeGroupSnapshotPO sender, StoragePO receiver);
-
-    void syncVolumeFull(VolumeSnapshotPO sender, VolumeGroupPO receiver);
+    void syncVolumeFull(VolumeSnapshotPO sender, StoragePO receiverStorage, String receiverVolumeName);
 
 }

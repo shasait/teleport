@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public final class CrudForm<PO extends IdAndVersion, R extends SearchableReposit
         deleteButton.setIcon(VaadinIcon.TRASH.create());
         addButtonToForm(deleteButton);
 
-        populator.populateForm(poClass,binder,this);
+        populator.populateForm(poClass, binder, this);
 
         add(formButtonLayout);
         add(statusSpan);
@@ -91,6 +91,10 @@ public final class CrudForm<PO extends IdAndVersion, R extends SearchableReposit
         changeListeners = new CopyOnWriteArrayList<>();
     }
 
+    public Binder<PO> getBinder() {
+        return binder;
+    }
+
     public void setBean(PO bean) {
         binder.setBean(bean);
         binder.validate();
@@ -101,11 +105,11 @@ public final class CrudForm<PO extends IdAndVersion, R extends SearchableReposit
         deleteButton.setEnabled(existing);
     }
 
-    public  void addListener(@Nonnull Runnable listener) {
+    public void addListener(@Nonnull Runnable listener) {
         changeListeners.add(listener);
     }
 
-    public  void removeListener(Runnable listener) {
+    public void removeListener(Runnable listener) {
         changeListeners.remove(listener);
     }
 

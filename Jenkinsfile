@@ -59,80 +59,80 @@ node('linux') {
 	}
 
 	configFileProvider([configFile(fileId: 'ciserver-settings.xml', targetLocation: 'maven-settings.xml', variable: 'mvnSettings')]) {
-			dir('co') {
-				def mvnOptions = "-B -U -e -s ${mvnSettings} -Dmaven.repo.local=${mvnRepo}"
-				if (params.mvnDebug) {
-					mvnOptions = "-X ${mvnOptions}"
-				}
-				mvnOptions = "${mvnOptions} -Pproduction"
-				def mvnCommand = "./sdkman-mvn.sh ${mvnOptions}"
-				def currentBranch
-				def releaseTag
+        dir('co') {
+            def mvnOptions = "-B -U -e -s ${mvnSettings} -Dmaven.repo.local=${mvnRepo}"
+            if (params.mvnDebug) {
+                mvnOptions = "-X ${mvnOptions}"
+            }
+            mvnOptions = "${mvnOptions} -Pproduction"
+            def mvnCommand = "./sdkman-mvn.sh ${mvnOptions}"
+            def currentBranch
+            def releaseTag
 
-				stage('Checkout') {
-					checkout scm
+            stage('Checkout') {
+                checkout scm
 
-					sh "printenv"
-					sh "git config --list"
-					if (env.BRANCH_NAME) {
-						currentBranch = "HEAD:${env.BRANCH_NAME}"
-					} else {
-						currentBranch = sh(returnStdout: true, script: "git branch | grep \\* | cut -d ' ' -f2").trim()
-					}
-					echo "\u27A1 On branch ${currentBranch}..."
+                sh "printenv"
+                sh "git config --list"
+                if (env.BRANCH_NAME) {
+                    currentBranch = "HEAD:${env.BRANCH_NAME}"
+                } else {
+                    currentBranch = sh(returnStdout: true, script: "git branch | grep \\* | cut -d ' ' -f2").trim()
+                }
+                echo "\u27A1 On branch ${currentBranch}..."
 
-					if (params.releaseVersion || params.developmentVersion) {
-						echo "\u27A1 Configuring git..."
-						sh "git config user.name '${params.gitUserName}'"
-						sh "git config user.email '${params.gitUserEmail}'"
-						sh "git config --local credential.username '${params.gitUserName}'"
-					}
+                if (params.releaseVersion || params.developmentVersion) {
+                    echo "\u27A1 Configuring git..."
+                    sh "git config user.name '${params.gitUserName}'"
+                    sh "git config user.email '${params.gitUserEmail}'"
+                    sh "git config --local credential.username '${params.gitUserName}'"
+                }
 
-					if (params.releaseVersion) {
-						releaseTag = "${params.releaseVersion}"
-						def msg = "Changing POM versions to release version ${params.releaseVersion}"
-						echo "\u27A1 ${msg}..."
-						sh "${mvnCommand} release:update-versions -DautoVersionSubmodules=true -DdevelopmentVersion=${params.releaseVersion}-REMOVEME-SNAPSHOT"
-						sh "find . -type f -name pom.xml -exec sed -i -e 's/${params.releaseVersion}-REMOVEME-SNAPSHOT/${params.releaseVersion}/' \\{\\} \\;"
-						sh "find . -type f -name pom.xml -exec git add \\{\\} \\;"
-						sh "git commit -m '[Jenkinsfile] ${msg}'"
-						def gitTagOptions = params.forceTag ? '-f' : ''
-						sh "git tag ${gitTagOptions} ${releaseTag}"
-						manager.addInfoBadge("Release ${params.releaseVersion}")
-					}
-				}
+                if (params.releaseVersion) {
+                    releaseTag = "${params.releaseVersion}"
+                    def msg = "Changing POM versions to release version ${params.releaseVersion}"
+                    echo "\u27A1 ${msg}..."
+                    sh "${mvnCommand} release:update-versions -DautoVersionSubmodules=true -DdevelopmentVersion=${params.releaseVersion}-REMOVEME-SNAPSHOT"
+                    sh "find . -type f -name pom.xml -exec sed -i -e 's/${params.releaseVersion}-REMOVEME-SNAPSHOT/${params.releaseVersion}/' \\{\\} \\;"
+                    sh "find . -type f -name pom.xml -exec git add \\{\\} \\;"
+                    sh "git commit -m '[Jenkinsfile] ${msg}'"
+                    def gitTagOptions = params.forceTag ? '-f' : ''
+                    sh "git tag ${gitTagOptions} ${releaseTag}"
+                    manager.addInfoBadge("Release ${params.releaseVersion}")
+                }
+            }
 
-				stage('Deploy') {
-					try {
-						echo "\u27A1 Deploying project..."
-						sh "${mvnCommand} deploy -Dmaven.test.failure.ignore=true"
-					} catch (err) {
-						echo "\u27A1 Error: ${err}"
-						currentBuild.result = 'FAILURE'
-						throw err
-					}
-					if (params.releaseVersion) {
-						echo "\u27A1 Pushing release tag ${releaseTag}..."
-						sh "git push -f origin tag ${releaseTag}"
-					}
-					if (params.developmentVersion) {
-						def msg = "Changing POM versions to development version ${params.developmentVersion}"
-						echo "\u27A1 ${msg}..."
+            stage('Deploy') {
+                try {
+                    echo "\u27A1 Deploying project..."
+                    sh "${mvnCommand} deploy -Dmaven.test.failure.ignore=true"
+                } catch (err) {
+                    echo "\u27A1 Error: ${err}"
+                    currentBuild.result = 'FAILURE'
+                    throw err
+                }
+                if (params.releaseVersion) {
+                    echo "\u27A1 Pushing release tag ${releaseTag}..."
+                    sh "git push -f origin tag ${releaseTag}"
+                }
+                if (params.developmentVersion) {
+                    def msg = "Changing POM versions to development version ${params.developmentVersion}"
+                    echo "\u27A1 ${msg}..."
 
-						sh "${mvnCommand} release:update-versions -DautoVersionSubmodules=true -DdevelopmentVersion=${params.developmentVersion}-SNAPSHOT"
-						sh "find . -type f -name pom.xml -exec git add \\{\\} \\;"
-						sh "git commit -m '[Jenkinsfile] ${msg}'"
-						sh "git push origin ${currentBranch}"
-					}
-				}
+                    sh "${mvnCommand} release:update-versions -DautoVersionSubmodules=true -DdevelopmentVersion=${params.developmentVersion}-SNAPSHOT"
+                    sh "find . -type f -name pom.xml -exec git add \\{\\} \\;"
+                    sh "git commit -m '[Jenkinsfile] ${msg}'"
+                    sh "git push origin ${currentBranch}"
+                }
+            }
 
-				stage('Collect Test Results') {
-					junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
-				}
+            stage('Collect Test Results') {
+                junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
+            }
 
-				stage('Archive Artifacts') {
-					archiveArtifacts artifacts: '**/target/*.jar', onlyIfSuccessful: true, allowEmptyArchive: true
-				}
-			}
+            stage('Archive Artifacts') {
+                archiveArtifacts artifacts: '**/target/*.jar', onlyIfSuccessful: true, allowEmptyArchive: true
+            }
+        }
 	}
 }

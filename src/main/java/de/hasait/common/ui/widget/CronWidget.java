@@ -1,8 +1,25 @@
+/*
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package de.hasait.common.ui.widget;
 
 import com.vaadin.flow.component.HasComponents;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import de.hasait.common.ui.VaadinUtil;
 import de.hasait.common.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.MessageSource;
@@ -20,21 +37,21 @@ public class CronWidget {
     private final TextField nextRelativePreviewLabel;
     private final TextField next2PreviewLabel;
 
-    public CronWidget(MessageSource messageSource) {
+    public CronWidget() {
         super();
 
         Locale locale = Locale.getDefault();
 
-        nextFormatter = DateTimeFormatter.ofPattern(messageSource.getMessage("cronNext.formatter", null, locale));
+        nextFormatter = DateTimeFormatter.ofPattern(VaadinUtil.getTranslation("cronNext.formatter"));
 
-        cronExpressionField = new TextField(messageSource.getMessage("cronExpression.label", null, locale));
-        cronExpressionField.setTooltipText(messageSource.getMessage("cronExpression.tooltip", null, locale));
+        cronExpressionField = new TextField(VaadinUtil.getTranslation("cronExpression.label"));
+        cronExpressionField.setTooltipText(VaadinUtil.getTranslation("cronExpression.tooltip"));
 
-        next1PreviewLabel = new TextField(messageSource.getMessage("cronNext.label", null, locale));
+        next1PreviewLabel = new TextField(VaadinUtil.getTranslation("cronNext.label"));
 
-        nextRelativePreviewLabel = new TextField(messageSource.getMessage("cronNextRelative.label", null, locale));
+        nextRelativePreviewLabel = new TextField(VaadinUtil.getTranslation("cronNextRelative.label"));
 
-        next2PreviewLabel = new TextField(messageSource.getMessage("cronNextNext.label", null, locale));
+        next2PreviewLabel = new TextField(VaadinUtil.getTranslation("cronNextNext.label"));
     }
 
     public TextField getCronExpressionField() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,7 @@
 
 package de.hasait.teleport.service.zfs;
 
-import com.google.gson.Gson;
 import de.hasait.common.util.cli.CliExecutor;
-import de.hasait.teleport.domain.HasStorage;
-import de.hasait.teleport.domain.SnapshotData;
-import de.hasait.teleport.domain.StoragePO;
-import de.hasait.teleport.domain.VolumeGroupPO;
-import de.hasait.teleport.domain.VolumeGroupSnapshotPO;
-import de.hasait.teleport.domain.VolumePO;
-import de.hasait.teleport.domain.VolumeSnapshotPO;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,69 +38,6 @@ public final class ZfsUtils {
         if (zfsDataset.endsWith("/")) {
             throw new IllegalArgumentException("Invalid ZFS base object - cannot end with a slash: " + zfsDataset);
         }
-    }
-
-    public static String determineZfsDataset(StoragePO storage) {
-        if (ZfsDriver.DRIVER_ID.equals(storage.getDriver())) {
-            ZfsDriverConfig zfsDriverConfig = new Gson().fromJson(storage.getDriverConfig(), ZfsDriverConfig.class);
-            String dataset = zfsDriverConfig.getDataset();
-            ZfsUtils.validateZfsDataset(dataset);
-            return dataset;
-        }
-        throw new IllegalArgumentException("Not a ZFS storage: " + storage);
-    }
-
-    public static String determineZfsDataset(VolumeGroupPO volumeGroup) {
-        return determineZfsDataset(volumeGroup.getStorage(), volumeGroup.getName());
-    }
-
-    public static String determineZfsDataset(StoragePO storage, String volumeGroupName) {
-        return determineZfsDataset(storage) + "/" + volumeGroupName;
-    }
-
-    public static String determineZfsVolume(VolumePO volume) {
-        return determineZfsVolume(volume.getVolumeGroup(), volume.getName());
-    }
-
-    public static String determineZfsVolume(VolumeGroupPO volumeGroup, String volumeName) {
-        return determineZfsDataset(volumeGroup) + "/" + volumeName;
-    }
-
-    public static String determineZfsObject(HasStorage hasStorage) {
-        if (hasStorage instanceof StoragePO storage) {
-            return determineZfsDataset(storage);
-        }
-        if (hasStorage instanceof VolumeGroupPO volumeGroup) {
-            return determineZfsDataset(volumeGroup);
-        }
-        if (hasStorage instanceof VolumePO volume) {
-            return determineZfsVolume(volume);
-        }
-        if (hasStorage instanceof VolumeGroupSnapshotPO snapshot) {
-            return determineZfsDataset(snapshot.getVolumeGroup()) + "@" + snapshot.getData().getName();
-        }
-        if (hasStorage instanceof VolumeSnapshotPO snapshot) {
-            return determineZfsVolume(snapshot.getVolume()) + "@" + snapshot.getData().getName();
-        }
-        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
-    }
-
-    public static String determineZfsObject(HasStorage hasStorage, SnapshotData snapshotData) {
-        if (hasStorage instanceof VolumeGroupPO || hasStorage instanceof VolumePO) {
-            return determineZfsObject(hasStorage) + "@" + snapshotData.getName();
-        }
-        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
-    }
-
-    public static String determineZfsObjectForOtherStorage(HasStorage hasStorage, StoragePO otherStorage) {
-        String objectStorageDataset = determineZfsDataset(hasStorage.obtainStorage());
-        String zfsObject = determineZfsObject(hasStorage);
-        String otherStorageDataset = determineZfsDataset(otherStorage);
-        return otherStorageDataset + zfsObject.substring(objectStorageDataset.length());
-    }
-
-    public static String determineDevice(VolumePO volume) {
-        return "/dev/zvol/" + determineZfsVolume(volume);
     }
 
     public static void zfsListAll(CliExecutor exe, String baseZfsDataset, String propsCsv, Consumer<String> lineProcessor) {

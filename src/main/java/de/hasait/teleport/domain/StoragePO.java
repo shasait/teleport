@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
@@ -25,6 +41,7 @@ import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Entity
@@ -72,9 +89,10 @@ public class StoragePO implements IdAndVersion, HasStorage {
     @Column(name = "AVAIL_BYTES", nullable = false)
     private long availBytes;
 
+
     @OneToMany(mappedBy = "storage", cascade = CascadeType.ALL)
     @OrderBy("name ASC")
-    private List<VolumeGroupPO> volumeGroups = new ArrayList<>();
+    private List<VolumePO> volumes = new ArrayList<>();
 
     @Override
     public Long getId() {
@@ -151,13 +169,17 @@ public class StoragePO implements IdAndVersion, HasStorage {
         this.availBytes = availBytes;
     }
 
-    public List<VolumeGroupPO> getVolumeGroups() {
-        return volumeGroups;
+    public List<VolumePO> getVolumes() {
+        return volumes;
     }
 
     @Override
     public StoragePO obtainStorage() {
         return this;
+    }
+
+    public Optional<VolumePO> findVolumeByName(String name) {
+        return getVolumes().stream().filter(it -> it.getName().equals(name)).findAny();
     }
 
 }

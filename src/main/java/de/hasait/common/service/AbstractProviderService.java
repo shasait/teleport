@@ -16,6 +16,9 @@
 
 package de.hasait.common.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +29,8 @@ import java.util.stream.Collectors;
  *
  */
 public class AbstractProviderService<P extends Provider> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractProviderService.class);
 
     private final Map<String, P> providersById = new HashMap<>();
 
@@ -50,12 +55,19 @@ public class AbstractProviderService<P extends Provider> {
     }
 
     public final String validateProviderConfig(String providerId, String providerConfig) {
-        P provider = getProviderByIdNotNull(providerId);
-        String errorMessage = provider.validateConfig(providerConfig);
-        if (errorMessage != null) {
-            return "Invalid providerConfig: " + errorMessage;
+        try {
+            P provider = getProviderByIdNotNull(providerId);
+            String errorMessage = provider.validateConfig(providerConfig);
+            if (errorMessage != null) {
+                return "Invalid providerConfig: " + errorMessage;
+            }
+            return null;
+        } catch (InvalidProviderIdException e) {
+            return "Provider not found: " + providerId;
+        } catch (RuntimeException e) {
+            LOG.debug("validateProviderConfig: providerId={}, providerConfig={}", providerId, providerConfig, e);
+            return e.getClass().getSimpleName() + ": " + e.getMessage();
         }
-        return null;
     }
 
     @Nonnull

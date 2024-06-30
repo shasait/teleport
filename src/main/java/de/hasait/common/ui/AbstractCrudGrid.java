@@ -55,9 +55,14 @@ public abstract class AbstractCrudGrid<PO extends IdAndVersion, R extends Search
         versionColumn.setHeader("Version");
 
         crudForm = new CrudForm<>(poClass, repository, populator);
+        customizeCrudForm(crudForm);
         add(crudForm);
 
         crudForm.addListener(this::updateGrid);
+    }
+
+    protected void customizeCrudForm(CrudForm<PO, R> crudForm) {
+        // nop
     }
 
     protected PO newPO() {
