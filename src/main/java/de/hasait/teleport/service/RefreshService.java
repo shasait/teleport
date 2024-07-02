@@ -16,6 +16,7 @@
 
 package de.hasait.teleport.service;
 
+import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.service.vm.HypervisorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
