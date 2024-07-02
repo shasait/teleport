@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.zfs;
+package de.hasait.teleport.service.storage.zfs;
 
 public class ZfsDriverConfig {
 

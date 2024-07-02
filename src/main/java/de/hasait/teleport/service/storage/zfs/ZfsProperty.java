@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.zfs;
+package de.hasait.teleport.service.storage.zfs;
 
 import java.util.Map;
 import java.util.function.Function;

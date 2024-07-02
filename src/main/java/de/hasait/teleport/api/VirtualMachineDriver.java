@@ -14,18 +14,26 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.ui.puif;
+package de.hasait.teleport.api;
 
-import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
-import de.hasait.teleport.api.StorageDriver;
-import de.hasait.teleport.service.storage.StorageDriverService;
-import org.springframework.stereotype.Service;
+import de.hasait.common.service.Provider;
+import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.domain.VirtualMachinePO;
 
-@Service
-public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
+public interface VirtualMachineDriver extends Provider {
 
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
-    }
+    void refresh(HypervisorPO hypervisor);
+
+    void create(HypervisorPO hypervisor, VirtualMachineTO config, boolean runInstallation);
+
+    void start(VirtualMachinePO virtualMachine);
+
+    void shutdown(VirtualMachinePO virtualMachine);
+
+    void kill(VirtualMachinePO virtualMachine);
+
+    void update(VirtualMachinePO virtualMachine);
+
+    void delete(VirtualMachinePO virtualMachine);
 
 }

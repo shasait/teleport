@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.storage;
 
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.StorageRepository;
@@ -29,18 +29,18 @@ public class StorageService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final StorageRepository storageRepository;
-    private final StorageDriverService storageDriverService;
+    private final StorageRepository repository;
+    private final StorageDriverService driverService;
 
-    public StorageService(StorageRepository storageRepository, StorageDriverService storageDriverService) {
-        this.storageRepository = storageRepository;
-        this.storageDriverService = storageDriverService;
+    public StorageService(StorageRepository repository, StorageDriverService driverService) {
+        this.repository = repository;
+        this.driverService = driverService;
     }
-    
-    public void refreshStorages() {
-        List<StoragePO> storages = storageRepository.findAll();
+
+    public void refreshAll() {
+        List<StoragePO> storages = repository.findAll();
         for (StoragePO storage : storages) {
-            storageDriverService.refreshStorage(storage);
+            driverService.refresh(storage);
         }
     }
 

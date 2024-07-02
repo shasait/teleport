@@ -17,13 +17,10 @@
 package de.hasait.teleport.api;
 
 import java.io.Serializable;
-import java.util.List;
 
-public class VolumeGroupTO implements Serializable {
+public class VirtualMachineTO implements Serializable {
 
     private String name;
-
-    private List<VolumeTO> volumes;
 
     public String getName() {
         return name;
@@ -31,14 +28,6 @@ public class VolumeGroupTO implements Serializable {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public List<VolumeTO> getVolumes() {
-        return volumes;
-    }
-
-    public void setVolumes(List<VolumeTO> volumes) {
-        this.volumes = volumes;
     }
 
 }

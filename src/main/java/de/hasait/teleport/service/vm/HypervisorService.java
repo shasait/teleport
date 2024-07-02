@@ -14,36 +14,34 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.vm;
 
-import de.hasait.teleport.service.vm.HypervisorService;
+import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.domain.HypervisorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 @Service
-public class RefreshService {
+public class HypervisorService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final StorageService storageService;
-    private final HypervisorService hypervisorService;
+    private final HypervisorRepository repository;
+    private final VirtualMachineDriverService driverService;
 
-    public RefreshService(StorageService storageService, HypervisorService hypervisorService) {
-        this.storageService = storageService;
-        this.hypervisorService = hypervisorService;
+    public HypervisorService(HypervisorRepository repository, VirtualMachineDriverService driverService) {
+        this.repository = repository;
+        this.driverService = driverService;
     }
 
-    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
-    @Transactional
-    public void scheduleFixedDelayTask() {
-        log.info("Refreshing...");
-        storageService.refreshAll();
-        hypervisorService.refreshAll();
+    public void refreshAll() {
+        List<HypervisorPO> hypervisors = repository.findAll();
+        for (HypervisorPO hypervisor : hypervisors) {
+            driverService.refresh(hypervisor);
+        }
     }
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.storage;
 
 import de.hasait.common.service.AbstractProviderService;
 import de.hasait.teleport.api.StorageDriver;
@@ -28,9 +28,9 @@ public class StorageDriverService extends AbstractProviderService<StorageDriver>
         super(providers);
     }
 
-    public void refreshStorage(StoragePO storage) {
+    public void refresh(StoragePO storage) {
         StorageDriver storageDriver = getProviderByIdNotNull(storage.getDriver());
         storageDriver.refresh(storage);
     }
-    
+
 }
