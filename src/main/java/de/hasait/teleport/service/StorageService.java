@@ -16,21 +16,33 @@
 
 package de.hasait.teleport.service;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.api.StorageDriver;
 import de.hasait.teleport.domain.StoragePO;
+import de.hasait.teleport.domain.StorageRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
-public class StorageDriverService extends AbstractProviderService<StorageDriver> {
+public class StorageService {
 
-    public StorageDriverService(StorageDriver[] providers) {
-        super(providers);
-    }
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public void refreshStorage(StoragePO storage) {
-        StorageDriver storageDriver = getProviderByIdNotNull(storage.getDriver());
-        storageDriver.refresh(storage);
+    private final StorageRepository storageRepository;
+    private final StorageDriverService storageDriverService;
+
+    public StorageService(StorageRepository storageRepository, StorageDriverService storageDriverService) {
+        this.storageRepository = storageRepository;
+        this.storageDriverService = storageDriverService;
     }
     
+    public void refreshStorages() {
+        List<StoragePO> storages = storageRepository.findAll();
+        for (StoragePO storage : storages) {
+            storageDriverService.refreshStorage(storage);
+        }
+    }
+
+
 }

@@ -16,21 +16,30 @@
 
 package de.hasait.teleport.service;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.api.StorageDriver;
-import de.hasait.teleport.domain.StoragePO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.TimeUnit;
 
 @Service
-public class StorageDriverService extends AbstractProviderService<StorageDriver> {
+public class RefreshService {
 
-    public StorageDriverService(StorageDriver[] providers) {
-        super(providers);
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private final StorageService storageService;
+
+    public RefreshService(StorageService storageService) {
+        this.storageService = storageService;
     }
 
-    public void refreshStorage(StoragePO storage) {
-        StorageDriver storageDriver = getProviderByIdNotNull(storage.getDriver());
-        storageDriver.refresh(storage);
+    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
+    @Transactional
+    public void scheduleFixedDelayTask() {
+        log.info("Refreshing...");
+        storageService.refreshStorages();
     }
-    
+
 }

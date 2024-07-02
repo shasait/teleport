@@ -17,6 +17,7 @@
 package de.hasait.teleport.ui;
 
 
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
@@ -40,4 +41,11 @@ public class VolumeGridView extends AbstractCrudGrid<VolumePO, VolumeRepository>
         super(VolumePO.class, repository, 2, populator);
     }
 
+    @Override
+    protected void customizeCrudGrid(Grid<VolumePO> crudGrid) {
+        super.customizeCrudGrid(crudGrid);
+
+        Grid.Column<VolumePO> storageColumn = beanGrid.addColumn(volume -> volume.getStorage().getHypervisor().getName() + "/" + volume.getStorage().getName());
+        storageColumn.setHeader("Storage");
+    }
 }

@@ -17,17 +17,14 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.ui.puif.TextAreaForStringPui;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
@@ -38,14 +35,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Entity
-@Table(name = "VIRTUAL_MACHINE", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_VM_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"}),
-        @UniqueConstraint(name = "UC_VM_HV_UUID", columnNames = {"HYPERVISOR_ID", "UUID"})
+@Table(name = "VIRTUAL_MACHINE", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_VM_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"}), //
+        @UniqueConstraint(name = "UC_VM_HV_UUID", columnNames = {"HYPERVISOR_ID", "UUID"}) //
 })
 public class VirtualMachinePO implements IdAndVersion {
 
@@ -79,11 +74,10 @@ public class VirtualMachinePO implements IdAndVersion {
     @Column(name = "DRIVER", nullable = false)
     private String driver;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "VM_DRIVER_CONFIG", joinColumns = {@JoinColumn(name = "VIRTUAL_MACHINE_ID")})
-    @MapKeyColumn(name = "CONFIG_KEY")
-    @Column(name = "CONFIG_VALUE")
-    private Map<String, String> driverConfig = new HashMap<>();
+    @Size(max = 512)
+    @Column(name = "DRIVER_CONFIG")
+    @TextAreaForStringPui
+    private String driverConfig;
 
     @Min(1)
     @Column(name = "CORES")
@@ -173,8 +167,12 @@ public class VirtualMachinePO implements IdAndVersion {
         this.driver = driver;
     }
 
-    public Map<String, String> getDriverConfig() {
+    public String getDriverConfig() {
         return driverConfig;
+    }
+
+    public void setDriverConfig(String driverConfig) {
+        this.driverConfig = driverConfig;
     }
 
     public int getCores() {

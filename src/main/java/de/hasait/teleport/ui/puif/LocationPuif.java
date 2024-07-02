@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 public class LocationPuif extends AbstractToOnePuiFactory<LocationPO, LocationRepository, Void> {
 
     public LocationPuif(LocationRepository repository) {
-        super(LocationPO.class, 1, () -> null, repository);
+        super(LocationPO.class, () -> null, repository);
     }
 
     @Override

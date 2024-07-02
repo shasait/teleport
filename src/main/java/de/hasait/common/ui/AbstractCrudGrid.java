@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,17 @@ public abstract class AbstractCrudGrid<PO extends IdAndVersion, R extends Search
         Grid.Column<PO> versionColumn = beanGrid.addColumn(IdAndVersion::getVersion);
         versionColumn.setHeader("Version");
 
+        customizeCrudGrid(beanGrid);
+
         crudForm = new CrudForm<>(poClass, repository, populator);
         customizeCrudForm(crudForm);
         add(crudForm);
 
         crudForm.addListener(this::updateGrid);
+    }
+
+    protected void customizeCrudGrid(Grid<PO> crudGrid) {
+        // nop
     }
 
     protected void customizeCrudForm(CrudForm<PO, R> crudForm) {

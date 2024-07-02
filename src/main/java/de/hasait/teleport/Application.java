@@ -22,9 +22,11 @@ import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {"de.hasait.common", "de.hasait.teleport"})
+@EnableScheduling
 @EnableVaadin(value = {"de.hasait.common", "de.hasait.teleport"})
 @Theme(value = "teleport")
 public class Application implements AppShellConfigurator {

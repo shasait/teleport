@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.common.ui.puif;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.api.StorageDriver;
-import de.hasait.teleport.domain.StoragePO;
-import org.springframework.stereotype.Service;
+import de.hasait.common.service.Provider;
 
-@Service
-public class StorageDriverService extends AbstractProviderService<StorageDriver> {
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-    public StorageDriverService(StorageDriver[] providers) {
-        super(providers);
-    }
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ProvderPui {
 
-    public void refreshStorage(StoragePO storage) {
-        StorageDriver storageDriver = getProviderByIdNotNull(storage.getDriver());
-        storageDriver.refresh(storage);
-    }
-    
+    Class<? extends Provider> provider();
+
 }

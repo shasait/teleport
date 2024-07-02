@@ -17,8 +17,10 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.ui.puif.ProvderPui;
 import de.hasait.common.ui.puif.StringSetPui;
 import de.hasait.common.ui.puif.TextAreaForStringPui;
+import de.hasait.teleport.api.StorageDriver;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -45,8 +47,8 @@ import java.util.Optional;
 import java.util.Set;
 
 @Entity
-@Table(name = "STORAGE", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_ST_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"})
+@Table(name = "STORAGE", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_ST_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"}) //
 })
 public class StoragePO implements IdAndVersion, HasStorage {
 
@@ -78,6 +80,7 @@ public class StoragePO implements IdAndVersion, HasStorage {
     @Size(min = 1, max = 32)
     @NotNull
     @Column(name = "DRIVER", nullable = false)
+    @ProvderPui(provider = StorageDriver.class)
     private String driver;
 
     @Size(max = 512)

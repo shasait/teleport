@@ -30,8 +30,8 @@ public abstract class AbstractToOnePuiFactory<PO extends IdAndVersion, R extends
 
     private final R repository;
 
-    public AbstractToOnePuiFactory(Class<PO> poClass, int priority, Supplier<C> contextFactory, R repository) {
-        super(poClass, priority, contextFactory);
+    public AbstractToOnePuiFactory(Class<PO> poClass, Supplier<C> contextFactory, R repository) {
+        super(poClass, 0, contextFactory);
 
         this.repository = repository;
     }

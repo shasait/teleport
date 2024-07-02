@@ -25,7 +25,6 @@ import de.hasait.teleport.api.CanResult;
 import de.hasait.teleport.api.StorageDriver;
 import de.hasait.teleport.api.VolumeTO;
 import de.hasait.teleport.domain.HasStorage;
-import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VolumePO;
@@ -47,6 +46,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -102,7 +102,7 @@ public class ZfsDriver implements StorageDriver {
     }
 
     private static final String VOLUME_REGEX = "(?<v>[^@]+)";
-    private static final String VOLUME_SNAPSHOT_REGEX = "(?<rv>" + VOLUME_REGEX + ")@(?<vs>[^/]+)";
+    private static final String VOLUME_SNAPSHOT_REGEX = VOLUME_REGEX + "@(?<vs>[^/]+)";
     private static final Pattern VOLUME_PATTERN = Pattern.compile(VOLUME_REGEX);
     private static final Pattern VOLUME_SNAPSHOT_PATTERN = Pattern.compile(VOLUME_SNAPSHOT_REGEX);
 
@@ -122,6 +122,7 @@ public class ZfsDriver implements StorageDriver {
         return VolumeState.valueOfExternalValue(raw);
     }
 
+    private static final ZfsProperty<String> ZFS_PROP___TYPE = new ZfsProperty<>("type", Function.identity());
     private static final ZfsProperty<String> ZFS_PROP___NAME = new ZfsProperty<>("name", Function.identity());
     private static final ZfsProperty<LocalDateTime> ZFS_PROP___CREATION = new ZfsProperty<>("creation", ZfsDriver::parseZfsPropAsLocalDateTime);
     private static final ZfsProperty<Long> ZFS_PROP___AVAILABLE = new ZfsProperty<>("available", ZfsDriver::parseZfsPropAsOptionalLong);
@@ -130,6 +131,7 @@ public class ZfsDriver implements StorageDriver {
     private static final ZfsProperty<Long> ZFS_PROP___USED_BY_DATASET = new ZfsProperty<>("usedbydataset", ZfsDriver::parseZfsPropAsOptionalLong);
     private static final ZfsProperty<VolumeState> ZFS_PROP___ZRMAN___STATE = new ZfsProperty<>("zrman:state", ZfsDriver::parseZfsPropZrmanState);
     private static final List<ZfsProperty<?>> zfsProperties = List.of( //
+            ZFS_PROP___TYPE, //
             ZFS_PROP___NAME, //
             ZFS_PROP___CREATION, //
             ZFS_PROP___AVAILABLE, //
@@ -184,8 +186,9 @@ public class ZfsDriver implements StorageDriver {
     }
 
     @Override
-    public void populateHypervisor(HypervisorPO hypervisor, StoragePO storage) {
-        refreshStorage(storage);
+    public void refresh(StoragePO storage) {
+        refresh(storage, determineZfsDataset(storage));
+        // TODO remove objects not found during refresh
     }
 
     @Override
@@ -218,7 +221,7 @@ public class ZfsDriver implements StorageDriver {
         log.info("Volume {} created at {}", config.getName(), storage);
 
         if (!dryMode) {
-            refreshStorage(storage);
+            refresh(storage);
         }
     }
 
@@ -322,7 +325,7 @@ public class ZfsDriver implements StorageDriver {
         log.info("Volume {} deleted", volume);
 
         if (!dryMode) {
-            refreshStorage(storage);
+            refresh(storage);
         }
     }
 
@@ -401,7 +404,7 @@ public class ZfsDriver implements StorageDriver {
         log.info("Snapshots {} created", zfsObjects);
 
         if (!dryMode) {
-            refreshStorage(storage);
+            refresh(storage);
         }
     }
 
@@ -489,13 +492,8 @@ public class ZfsDriver implements StorageDriver {
         log.info("Full sync completed: {} -> {} as {}", sender, receiverStorage, receiverVolumeName);
 
         if (!dryMode) {
-            refreshStorage(receiverStorage);
+            refresh(receiverStorage);
         }
-    }
-
-    private void refreshStorage(StoragePO storage) {
-        refresh(storage, determineZfsDataset(storage));
-        // TODO remove objects not found during refresh
     }
 
     private void refreshVolume(VolumePO volume) {
@@ -531,68 +529,73 @@ public class ZfsDriver implements StorageDriver {
                 throw new IllegalArgumentException("Invalid ZFS object: " + zfsObject + " vs. storage " + storageZfsDataset);
             }
 
-            String remaining = zfsObject.substring(storageZfsDataset.length() + 1);
+            String relative = zfsObject.substring(storageZfsDataset.length() + 1);
 
-            Matcher volumeSnapshotMatcher = VOLUME_SNAPSHOT_PATTERN.matcher(remaining);
-            if (volumeSnapshotMatcher.matches()) {
-                String volumeName = volumeSnapshotMatcher.group("v");
-                VolumePO volume = storage.findVolumeByName(volumeName).orElseThrow();
-                String snapshotName = volumeSnapshotMatcher.group("vs");
-                if (SnapshotNameGenerator.NAME_PATTERN.matcher(snapshotName).matches()) {
-                    VolumeSnapshotPO existingSnapshot = volume.findSnapshotByName(snapshotName).orElse(null);
-                    VolumeSnapshotPO snapshot;
-                    LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
-                    if (creation == null) {
-                        throw new IllegalArgumentException("creation missing");
+            String zfsType = ZFS_PROP___TYPE.getFrom(properties);
+
+            if (zfsType.equals("snapshot")) {
+                Matcher volumeSnapshotMatcher = VOLUME_SNAPSHOT_PATTERN.matcher(relative);
+                if (volumeSnapshotMatcher.matches()) {
+                    String volumeName = volumeSnapshotMatcher.group("v");
+                    String snapshotName = volumeSnapshotMatcher.group("vs");
+                    VolumePO volume = storage.findVolumeByName(volumeName).orElse(null);
+                    if (volume != null) {
+                        if (SnapshotNameGenerator.NAME_PATTERN.matcher(snapshotName).matches()) {
+                            VolumeSnapshotPO existingSnapshot = volume.findSnapshotByName(snapshotName).orElse(null);
+                            VolumeSnapshotPO snapshot;
+                            LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
+                            if (creation == null) {
+                                throw new IllegalArgumentException("creation missing");
+                            }
+                            Long used = ZFS_PROP___USED.getFrom(properties);
+                            if (used == null) {
+                                throw new IllegalArgumentException("used missing");
+                            }
+                            if (existingSnapshot != null) {
+                                snapshot = existingSnapshot;
+                                snapshot.getData().setCreation(creation);
+                            } else {
+                                snapshot = new VolumeSnapshotPO();
+                                snapshot.setVolume(volume);
+                                snapshot.setData(new SnapshotData(snapshotName, creation));
+                            }
+                            snapshot.setUsedBytes(used);
+                            volumeSnapshotRepository.save(snapshot);
+                            return;
+                        }
                     }
-                    Long used = ZFS_PROP___USED.getFrom(properties);
-                    if (used == null) {
-                        throw new IllegalArgumentException("used missing");
+                }
+            }
+
+            if (zfsType.equals("volume")) {
+                Matcher volumeMatcher = VOLUME_PATTERN.matcher(relative);
+                if (volumeMatcher.matches()) {
+                    String volumeName = volumeMatcher.group("v");
+                    VolumePO existingVolume = storage.findVolumeByName(volumeName).orElse(null);
+                    VolumePO volume;
+                    Long volsize = ZFS_PROP___VOLSIZE.getFrom(properties);
+                    Long usedbydataset = ZFS_PROP___USED_BY_DATASET.getFrom(properties);
+                    VolumeState volumeState = Optional.ofNullable(ZFS_PROP___ZRMAN___STATE.getFrom(properties)).orElse(VolumeState.INACTIVE);
+                    if (volsize == null) {
+                        throw new IllegalArgumentException("volsize missing");
                     }
-                    if (existingSnapshot != null) {
-                        snapshot = existingSnapshot;
-                        snapshot.getData().setCreation(creation);
+                    if (usedbydataset == null) {
+                        throw new IllegalArgumentException("usedbydataset missing");
+                    }
+                    if (existingVolume != null) {
+                        volume = existingVolume;
+                        volume.setSizeBytes(volsize);
+                        volume.setUsedBytes(usedbydataset);
+                        volume.setState(volumeState);
                     } else {
-                        snapshot = new VolumeSnapshotPO();
-                        snapshot.setVolume(volume);
-                        snapshot.setData(new SnapshotData(snapshotName, creation));
+                        volume = new VolumePO(storage, volumeName, volsize, volumeState, usedbydataset);
                     }
-                    snapshot.setUsedBytes(used);
-                    volumeSnapshotRepository.save(snapshot);
+                    volumeRepository.save(volume);
                     return;
                 }
-                // foreign snapshot ignored;
-                log.warn("Ignored foreign snapshot: {}", snapshotName);
-                return;
             }
 
-            Matcher volumeMatcher = VOLUME_PATTERN.matcher(remaining);
-            if (volumeMatcher.matches()) {
-                String volumeName = volumeSnapshotMatcher.group("v");
-                VolumePO existingVolume = storage.findVolumeByName(volumeName).orElse(null);
-                VolumePO volume;
-                Long volsize = ZFS_PROP___VOLSIZE.getFrom(properties);
-                Long usedbydataset = ZFS_PROP___USED_BY_DATASET.getFrom(properties);
-                if (volsize == null) {
-                    throw new IllegalArgumentException("volsize missing");
-                }
-                if (usedbydataset == null) {
-                    throw new IllegalArgumentException("usedbydataset missing");
-                }
-                if (existingVolume != null) {
-                    volume = existingVolume;
-                } else {
-                    volume = new VolumePO();
-                    volume.setStorage(storage);
-                    volume.setName(volumeName);
-                }
-                volume.setSizeBytes(volsize);
-                volume.setUsedBytes(usedbydataset);
-                volumeRepository.save(volume);
-                return;
-            }
-
-            throw new IllegalArgumentException("Unknown zfsObject: " + zfsObject + ", remaining: " + remaining);
+            log.warn("Ignored zfsObject=" + zfsObject + "; relative=" + relative);
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Cannot process list line: " + line, e);
         }

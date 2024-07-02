@@ -30,9 +30,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "VOLUME_ATTACHMENT", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_VA_VM_NAME", columnNames = {"VM_ID", "NAME"}),
-        @UniqueConstraint(name = "UC_VA_VM_ID", columnNames = {"VM_ID", "VOLUME_ID"})
+@Table(name = "VOLUME_ATTACHMENT", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_VA_VM_NAME", columnNames = {"VM_ID", "NAME"}), //
+        @UniqueConstraint(name = "UC_VA_VM_ID", columnNames = {"VM_ID", "VOLUME_ID"}) //
 })
 public class VolumeAttachmentPO implements IdAndVersion {
 

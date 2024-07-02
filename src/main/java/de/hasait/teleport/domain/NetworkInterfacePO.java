@@ -30,9 +30,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "NETWORK_INTERFACE", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_NI_VM_NAME", columnNames = {"VM_ID", "NAME"}),
-        @UniqueConstraint(name = "UC_NI_VM_ID", columnNames = {"VM_ID", "NETWORK_ID"})
+@Table(name = "NETWORK_INTERFACE", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_NI_VM_NAME", columnNames = {"VM_ID", "NAME"}), //
+        @UniqueConstraint(name = "UC_NI_VM_ID", columnNames = {"VM_ID", "NETWORK_ID"}) //
 })
 public class NetworkInterfacePO implements IdAndVersion {
 

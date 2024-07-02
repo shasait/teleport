@@ -30,8 +30,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "NETWORK", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_NW_L_NAME", columnNames = {"LOCATION_ID", "NAME"})
+@Table(name = "NETWORK", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_NW_L_NAME", columnNames = {"LOCATION_ID", "NAME"}) //
 })
 public class NetworkPO implements IdAndVersion {
 

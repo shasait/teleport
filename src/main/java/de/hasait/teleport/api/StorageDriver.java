@@ -17,7 +17,6 @@
 package de.hasait.teleport.api;
 
 import de.hasait.common.service.Provider;
-import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VolumePO;
@@ -26,7 +25,7 @@ import de.hasait.teleport.domain.VolumeState;
 
 public interface StorageDriver extends Provider {
 
-    void populateHypervisor(HypervisorPO hypervisor, StoragePO storage);
+    void refresh(StoragePO storage);
 
     void create(StoragePO storage, VolumeTO config);
 

@@ -37,8 +37,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Entity
-@Table(name = "VOLUME", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_V_VG_NAME", columnNames = {"STORAGE_ID", "NAME"})
+@Table(name = "VOLUME", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_V_VG_NAME", columnNames = {"STORAGE_ID", "NAME"}) //
 })
 public final class VolumePO implements IdAndVersion, HasVolume {
 

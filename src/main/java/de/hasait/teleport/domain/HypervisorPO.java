@@ -37,8 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "HYPERVISOR", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_HV_L_NAME", columnNames = {"LOCATION_ID", "NAME"})
+@Table(name = "HYPERVISOR", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_HV_L_NAME", columnNames = {"LOCATION_ID", "NAME"}) //
 })
 public class HypervisorPO implements IdAndVersion, HasHypervisor {
 

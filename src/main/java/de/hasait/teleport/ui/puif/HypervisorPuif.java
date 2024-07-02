@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 public class HypervisorPuif extends AbstractToOnePuiFactory<HypervisorPO, HypervisorRepository, Void> {
 
     public HypervisorPuif(HypervisorRepository repository) {
-        super(HypervisorPO.class, 1, () -> null, repository);
+        super(HypervisorPO.class, () -> null, repository);
     }
 
     @Override

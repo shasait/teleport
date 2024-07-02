@@ -29,8 +29,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
-@Table(name = "HOST_CONN_CONFIG", uniqueConstraints = {
-        @UniqueConstraint(name = "UC_HCC_FROM_TO", columnNames = {"FROM_NAME", "TO_NAME"})
+@Table(name = "HOST_CONN_CONFIG", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_HCC_FROM_TO", columnNames = {"FROM_NAME", "TO_NAME"}) //
 })
 public class HostConnectConfigPO implements IdAndVersion {
 
