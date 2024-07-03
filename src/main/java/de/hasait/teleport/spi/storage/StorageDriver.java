@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.api;
+package de.hasait.teleport.spi.storage;
 
 import de.hasait.common.service.Provider;
+import de.hasait.teleport.api.CanResult;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VolumePO;

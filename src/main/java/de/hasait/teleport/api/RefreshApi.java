@@ -16,18 +16,9 @@
 
 package de.hasait.teleport.api;
 
-import java.io.Serializable;
+import org.springframework.transaction.annotation.Transactional;
 
-public class VirtualMachineTO implements Serializable {
-
-    private String name;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
+public interface RefreshApi {
+    @Transactional
+    void refresh();
 }

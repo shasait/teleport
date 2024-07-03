@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.storage.zfs;
+package de.hasait.teleport.spi.storage.zfs;
 
 import com.google.gson.Gson;
 import de.hasait.common.util.cli.CliExecutor;
@@ -22,8 +22,8 @@ import de.hasait.common.util.cli.InheritPIOStrategy;
 import de.hasait.common.util.cli.WriteBytesPIOStrategy;
 import de.hasait.teleport.CliConfig;
 import de.hasait.teleport.api.CanResult;
-import de.hasait.teleport.api.StorageDriver;
-import de.hasait.teleport.api.VolumeTO;
+import de.hasait.teleport.spi.storage.StorageDriver;
+import de.hasait.teleport.spi.storage.VolumeTO;
 import de.hasait.teleport.domain.HasStorage;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
@@ -59,16 +59,16 @@ public class ZfsDriver implements StorageDriver {
     public static final String DRIVER_ID = "zfs";
 
     private static ZfsDriverConfig parseConfig(String config) {
-        ZfsDriverConfig zfsDriverConfig = new Gson().fromJson(config, ZfsDriverConfig.class);
-        String dataset = zfsDriverConfig.getDataset();
+        ZfsDriverConfig driverConfig = new Gson().fromJson(config, ZfsDriverConfig.class);
+        String dataset = driverConfig.getDataset();
         ZfsUtils.validateZfsDataset(dataset);
-        return zfsDriverConfig;
+        return driverConfig;
     }
 
     public static String determineZfsDataset(StoragePO storage) {
-        if (ZfsDriver.DRIVER_ID.equals(storage.getDriver())) {
-            ZfsDriverConfig zfsDriverConfig = parseConfig(storage.getDriverConfig());
-            return zfsDriverConfig.getDataset();
+        if (DRIVER_ID.equals(storage.getDriver())) {
+            ZfsDriverConfig driverConfig = parseConfig(storage.getDriverConfig());
+            return driverConfig.getDataset();
         }
         throw new IllegalArgumentException("Not a ZFS storage: " + storage);
     }

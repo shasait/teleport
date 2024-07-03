@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.ui.puif;
+package de.hasait.teleport.spi.vm.virsh;
 
-import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
-import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.StorageDriverService;
-import org.springframework.stereotype.Service;
-
-@Service
-public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
-
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
-    }
+public class VirshDriverConfig {
 
 }

@@ -16,18 +16,16 @@
 
 package de.hasait.teleport.service;
 
+import de.hasait.teleport.api.RefreshApi;
 import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.service.vm.HypervisorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.TimeUnit;
-
 @Service
-public class RefreshService {
+public class RefreshService implements RefreshApi {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -39,9 +37,9 @@ public class RefreshService {
         this.hypervisorService = hypervisorService;
     }
 
-    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
+    @Override
     @Transactional
-    public void scheduleFixedDelayTask() {
+    public void refresh() {
         log.info("Refreshing...");
         storageService.refreshAll();
         hypervisorService.refreshAll();

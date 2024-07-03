@@ -16,16 +16,21 @@
 
 package de.hasait.teleport.ui.puif;
 
-import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
-import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.StorageDriverService;
+import de.hasait.common.ui.puif.AbstractToOnePuiFactory;
+import de.hasait.teleport.domain.StoragePO;
+import de.hasait.teleport.domain.StorageRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
+public class StoragePuif extends AbstractToOnePuiFactory<StoragePO, StorageRepository, Void> {
 
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
+    public StoragePuif(StorageRepository repository) {
+        super(StoragePO.class, () -> null, repository);
+    }
+
+    @Override
+    protected String getPoLabel(StoragePO po) {
+        return po.getHost().getName() + "/" + po.getName();
     }
 
 }

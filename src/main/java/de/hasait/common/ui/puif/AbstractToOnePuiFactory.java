@@ -24,6 +24,8 @@ import de.hasait.common.domain.IdAndVersion;
 import de.hasait.common.domain.SearchableRepository;
 import de.hasait.common.ui.JpaRepositoryDataProvider;
 
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 
 public abstract class AbstractToOnePuiFactory<PO extends IdAndVersion, R extends SearchableRepository<PO, ?>, C> extends AbstractPuiFactory<PO, PO, ComboBox<PO>, C> {
@@ -53,10 +55,18 @@ public abstract class AbstractToOnePuiFactory<PO extends IdAndVersion, R extends
     }
 
     @Override
-    protected <B> Grid.Column<B> addColumn(String propertyName, String label, Grid<B> grid, C context) {
-        return super.addColumn(propertyName + "." + getColumnLabelProperty(), label, grid, context);
+    protected final <B> Grid.Column<B> addColumn(PropertyDescriptor propertyDescriptor, String label, Grid<B> grid, C context) {
+        Grid.Column<B> column = grid.addColumn(bean -> {
+            PO po;
+            try {
+                po = (PO) propertyDescriptor.getReadMethod().invoke(bean);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+            return getPoLabel(po);
+        });
+        column.setHeader(label);
+        return column;
     }
-
-    protected abstract String getColumnLabelProperty();
 
 }

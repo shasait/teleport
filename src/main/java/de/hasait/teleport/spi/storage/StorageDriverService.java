@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.storage.zfs;
+package de.hasait.teleport.spi.storage;
 
-public class ZfsDriverConfig {
+import de.hasait.common.service.AbstractProviderService;
+import de.hasait.teleport.domain.StoragePO;
+import org.springframework.stereotype.Service;
 
-    private String dataset;
+@Service
+public class StorageDriverService extends AbstractProviderService<StorageDriver> {
 
-    public String getDataset() {
-        return dataset;
+    public StorageDriverService(StorageDriver[] providers) {
+        super(providers);
     }
 
-    public void setDataset(String dataset) {
-        this.dataset = dataset;
+    public void refresh(StoragePO storage) {
+        StorageDriver driver = getProviderByIdNotNull(storage.getDriver());
+        driver.refresh(storage);
     }
 
 }

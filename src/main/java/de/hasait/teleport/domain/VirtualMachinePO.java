@@ -17,7 +17,6 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
-import de.hasait.common.ui.puif.TextAreaForStringPui;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -69,15 +68,9 @@ public class VirtualMachinePO implements IdAndVersion {
     @Column(name = "UUID", nullable = false)
     private String uuid;
 
-    @Size(min = 1, max = 32)
     @NotNull
-    @Column(name = "DRIVER", nullable = false)
-    private String driver;
-
-    @Size(max = 512)
-    @Column(name = "DRIVER_CONFIG")
-    @TextAreaForStringPui
-    private String driverConfig;
+    @Column(name = "STATE")
+    private VmState state;
 
     @Min(1)
     @Column(name = "CORES")
@@ -107,6 +100,17 @@ public class VirtualMachinePO implements IdAndVersion {
     @OneToMany(mappedBy = "virtualMachine", cascade = CascadeType.ALL)
     @OrderBy("name ASC")
     private List<NetworkInterfacePO> networkInterfaces = new ArrayList<>();
+
+    public VirtualMachinePO() {
+    }
+
+    public VirtualMachinePO(HypervisorPO hypervisor, String name, VmState state) {
+        this.hypervisor = hypervisor;
+        this.name = name;
+        this.state = state;
+
+        hypervisor.getVirtualMachines().add(this);
+    }
 
     @Override
     public Long getId() {
@@ -159,20 +163,12 @@ public class VirtualMachinePO implements IdAndVersion {
         this.uuid = uuid;
     }
 
-    public String getDriver() {
-        return driver;
+    public VmState getState() {
+        return state;
     }
 
-    public void setDriver(String driver) {
-        this.driver = driver;
-    }
-
-    public String getDriverConfig() {
-        return driverConfig;
-    }
-
-    public void setDriverConfig(String driverConfig) {
-        this.driverConfig = driverConfig;
+    public void setState(VmState state) {
+        this.state = state;
     }
 
     public int getCores() {

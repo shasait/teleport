@@ -20,7 +20,7 @@ import de.hasait.common.domain.IdAndVersion;
 import de.hasait.common.ui.puif.ProvderPui;
 import de.hasait.common.ui.puif.StringSetPui;
 import de.hasait.common.ui.puif.TextAreaForStringPui;
-import de.hasait.teleport.api.StorageDriver;
+import de.hasait.teleport.spi.storage.StorageDriver;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -48,7 +48,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "STORAGE", uniqueConstraints = { //
-        @UniqueConstraint(name = "UC_ST_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"}) //
+        @UniqueConstraint(name = "UC_ST_HOST_NAME", columnNames = {"HOST_ID", "NAME"}) //
 })
 public class StoragePO implements IdAndVersion, HasStorage {
 
@@ -60,8 +60,8 @@ public class StoragePO implements IdAndVersion, HasStorage {
     private long version;
 
     @ManyToOne
-    @JoinColumn(name = "HYPERVISOR_ID", nullable = false)
-    private HypervisorPO hypervisor;
+    @JoinColumn(name = "HOST_ID", nullable = false)
+    private HostPO host;
 
     @Size(min = 1, max = 32)
     @NotNull
@@ -116,12 +116,12 @@ public class StoragePO implements IdAndVersion, HasStorage {
         this.version = version;
     }
 
-    public HypervisorPO getHypervisor() {
-        return hypervisor;
+    public HostPO getHost() {
+        return host;
     }
 
-    public void setHypervisor(HypervisorPO hypervisor) {
-        this.hypervisor = hypervisor;
+    public void setHost(HostPO host) {
+        this.host = host;
     }
 
     public String getName() {

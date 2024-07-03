@@ -30,12 +30,7 @@ public class HypervisorPuif extends AbstractToOnePuiFactory<HypervisorPO, Hyperv
 
     @Override
     protected String getPoLabel(HypervisorPO po) {
-        return po.getName();
-    }
-
-    @Override
-    protected String getColumnLabelProperty() {
-        return "name";
+        return po.getHost().getName() + "/" + po.getName();
     }
 
 }

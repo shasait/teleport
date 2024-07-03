@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.ui.puif;
+package de.hasait.teleport.domain;
 
-import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
-import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.StorageDriverService;
-import org.springframework.stereotype.Service;
+public interface HasHost extends HasLocation {
 
-@Service
-public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
-
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
+    default LocationPO obtainLocation() {
+        return obtainHost().getLocation();
     }
+
+    HostPO obtainHost();
 
 }

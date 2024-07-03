@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.vm;
+package de.hasait.teleport.spi.vm;
 
 import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.api.VirtualMachineDriver;
 import de.hasait.teleport.domain.HypervisorPO;
 import org.springframework.stereotype.Service;
 
 @Service
-public class VirtualMachineDriverService extends AbstractProviderService<VirtualMachineDriver> {
+public class HypervisorDriverService extends AbstractProviderService<HypervisorDriver> {
 
-    public VirtualMachineDriverService(VirtualMachineDriver[] providers) {
+    public HypervisorDriverService(HypervisorDriver[] providers) {
         super(providers);
     }
 
     public void refresh(HypervisorPO hypervisor) {
-        for (VirtualMachineDriver driver : findAll()) {
-            driver.refresh(hypervisor);
-        }
+        HypervisorDriver driver = getProviderByIdNotNull(hypervisor.getDriver());
+        driver.refresh(hypervisor);
     }
 
 }

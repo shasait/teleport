@@ -17,7 +17,6 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
-import de.hasait.common.ui.puif.TextAreaForStringPui;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,13 +35,12 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Entity
-@Table(name = "HYPERVISOR", uniqueConstraints = { //
-        @UniqueConstraint(name = "UC_HV_HOST_NAME", columnNames = {"HOST_ID", "NAME"}) //
+@Table(name = "HOST", uniqueConstraints = { //
+        @UniqueConstraint(name = "UC_HOST_L_NAME", columnNames = {"LOCATION_ID", "NAME"}) //
 })
-public class HypervisorPO implements IdAndVersion, HasHypervisor {
+public class HostPO implements IdAndVersion, HasHost {
 
     @Id
     @GeneratedValue
@@ -52,8 +50,8 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
     private long version;
 
     @ManyToOne
-    @JoinColumn(name = "HOST_ID", nullable = false)
-    private HostPO host;
+    @JoinColumn(name = "LOCATION_ID", nullable = false)
+    private LocationPO location;
 
     @Size(min = 1, max = 32)
     @NotNull
@@ -64,22 +62,16 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
     @Column(name = "DESCRIPTION")
     private String description;
 
-    @Size(min = 1, max = 32)
-    @NotNull
-    @Column(name = "DRIVER", nullable = false)
-    private String driver;
-
-    @Size(max = 512)
-    @Column(name = "DRIVER_CONFIG")
-    @TextAreaForStringPui
-    private String driverConfig;
-
     @Column(name = "LAST_SEEN")
     private LocalDateTime lastSeen;
 
-    @OneToMany(mappedBy = "hypervisor", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "host", cascade = CascadeType.ALL)
     @OrderBy("name ASC")
-    private List<VirtualMachinePO> virtualMachines = new ArrayList<>();
+    private List<StoragePO> storages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "host", cascade = CascadeType.ALL)
+    @OrderBy("name ASC")
+    private List<HypervisorPO> hypervisors = new ArrayList<>();
 
     @Override
     public Long getId() {
@@ -100,12 +92,12 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
         this.version = version;
     }
 
-    public HostPO getHost() {
-        return host;
+    public LocationPO getLocation() {
+        return location;
     }
 
-    public void setHost(HostPO host) {
-        this.host = host;
+    public void setLocation(LocationPO location) {
+        this.location = location;
     }
 
     public String getName() {
@@ -124,22 +116,6 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
         this.description = description;
     }
 
-    public String getDriver() {
-        return driver;
-    }
-
-    public void setDriver(String driver) {
-        this.driver = driver;
-    }
-
-    public String getDriverConfig() {
-        return driverConfig;
-    }
-
-    public void setDriverConfig(String driverConfig) {
-        this.driverConfig = driverConfig;
-    }
-
     public LocalDateTime getLastSeen() {
         return lastSeen;
     }
@@ -148,17 +124,17 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
         this.lastSeen = lastSeen;
     }
 
-    public List<VirtualMachinePO> getVirtualMachines() {
-        return virtualMachines;
+    public List<StoragePO> getStorages() {
+        return storages;
+    }
+
+    public List<HypervisorPO> getHypervisors() {
+        return hypervisors;
     }
 
     @Override
-    public HypervisorPO obtainHypervisor() {
+    public HostPO obtainHost() {
         return this;
-    }
-
-    public Optional<VirtualMachinePO> findVirtualMachineByName(String name) {
-        return getVirtualMachines().stream().filter(it -> it.getName().equals(name)).findAny();
     }
 
 }

@@ -14,35 +14,38 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.vm;
+package de.hasait.teleport.service;
 
-import de.hasait.teleport.domain.HypervisorPO;
-import de.hasait.teleport.domain.HypervisorRepository;
-import de.hasait.teleport.spi.vm.HypervisorDriverService;
+import de.hasait.teleport.api.RefreshApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
-public class HypervisorService {
+public class RefreshScheduler {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final HypervisorRepository repository;
-    private final HypervisorDriverService driverService;
+    private final ActionService actionService;
+    private final RefreshApi refreshApi;
 
-    public HypervisorService(HypervisorRepository repository, HypervisorDriverService driverService) {
-        this.repository = repository;
-        this.driverService = driverService;
+    public RefreshScheduler(ActionService actionService, RefreshApi refreshApi) {
+        this.actionService = actionService;
+        this.refreshApi = refreshApi;
     }
 
-    public void refreshAll() {
-        List<HypervisorPO> hypervisors = repository.findAll();
-        for (HypervisorPO hypervisor : hypervisors) {
-            driverService.refresh(hypervisor);
-        }
+    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
+    public void scheduleFixedDelayTask() {
+        actionService.submit(new Action<Void>("Refresh") {
+            @Override
+            public Void call() throws Exception {
+                refreshApi.refresh();
+                return null;
+            }
+        });
     }
 
 }

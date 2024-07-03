@@ -58,7 +58,7 @@ public class LocationPO implements IdAndVersion, HasLocation {
 
     @OneToMany(mappedBy = "location", cascade = CascadeType.ALL)
     @OrderBy("name ASC")
-    private List<HypervisorPO> hypervisors = new ArrayList<>();
+    private List<HostPO> hosts = new ArrayList<>();
 
     @Override
     public Long getId() {
@@ -99,8 +99,8 @@ public class LocationPO implements IdAndVersion, HasLocation {
         return networks;
     }
 
-    public List<HypervisorPO> getHypervisors() {
-        return hypervisors;
+    public List<HostPO> getHosts() {
+        return hosts;
     }
 
     @Override

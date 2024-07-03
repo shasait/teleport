@@ -14,18 +14,30 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.ui.puif;
+package de.hasait.teleport.spi.storage;
 
-import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
-import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.StorageDriverService;
-import org.springframework.stereotype.Service;
+import java.io.Serializable;
 
-@Service
-public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
+public class VolumeTO implements Serializable {
 
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
+    private String name;
+
+    private long sizeBytes;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public void setSizeBytes(long sizeBytes) {
+        this.sizeBytes = sizeBytes;
     }
 
 }

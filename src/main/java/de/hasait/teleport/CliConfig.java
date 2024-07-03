@@ -20,7 +20,7 @@ import com.google.gson.Gson;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.common.util.cli.LocalCliExecutor;
 import de.hasait.common.util.cli.SshCliExecutor;
-import de.hasait.teleport.domain.HasHypervisor;
+import de.hasait.teleport.domain.HasHost;
 import de.hasait.teleport.domain.HostConnectConfigPO;
 import de.hasait.teleport.domain.HostConnectConfigRepository;
 import de.hasait.teleport.service.ssh.SshHostConnectConfig;
@@ -89,8 +89,8 @@ public class CliConfig {
         return System.err;
     }
 
-    public CliExecutor createCliConnector(HasHypervisor hasHypervisor) {
-        return createCliConnector(hasHypervisor.obtainHypervisor().getName());
+    public CliExecutor createCliConnector(HasHost hasHost) {
+        return createCliConnector(hasHost.obtainHost().getName());
     }
 
     public CliExecutor createCliConnector(String hostname) {
@@ -116,8 +116,8 @@ public class CliConfig {
         return cliExecutor;
     }
 
-    public void appendSsh(HasHypervisor from, HasHypervisor to, StringBuilder result) {
-        appendSsh(from.obtainHypervisor().getName(), to.obtainHypervisor().getName(), result);
+    public void appendSsh(HasHost from, HasHost to, StringBuilder result) {
+        appendSsh(from.obtainHost().getName(), to.obtainHost().getName(), result);
     }
 
     public void appendSsh(String fromHostname, String toHostname, StringBuilder result) {

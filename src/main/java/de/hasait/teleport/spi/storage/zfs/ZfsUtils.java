@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.storage.zfs;
+package de.hasait.teleport.spi.storage.zfs;
 
 import de.hasait.common.util.cli.CliExecutor;
 

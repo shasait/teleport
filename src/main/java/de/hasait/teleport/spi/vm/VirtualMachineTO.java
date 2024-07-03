@@ -14,36 +14,20 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.storage.zfs;
+package de.hasait.teleport.spi.vm;
 
-import java.util.Map;
-import java.util.function.Function;
+import java.io.Serializable;
 
-public class ZfsProperty<T> {
+public class VirtualMachineTO implements Serializable {
 
-    private final String name;
-    private final Function<String, T> parser;
-
-    public ZfsProperty(String name, Function<String, T> parser) {
-        this.name = name;
-        this.parser = parser;
-    }
+    private String name;
 
     public String getName() {
         return name;
     }
 
-    public Function<String, T> getParser() {
-        return parser;
-    }
-
-
-    public void putInto(Map<String, Object> properties, String raw) {
-        properties.put(name, parser.apply(raw));
-    }
-
-    public T getFrom(Map<String, Object> properties) {
-        return (T) properties.get(name);
+    public void setName(String name) {
+        this.name = name;
     }
 
 }

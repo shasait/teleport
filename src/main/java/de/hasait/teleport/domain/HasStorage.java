@@ -16,11 +16,11 @@
 
 package de.hasait.teleport.domain;
 
-public interface HasStorage extends HasHypervisor {
+public interface HasStorage extends HasHost {
 
     @Override
-    default HypervisorPO obtainHypervisor() {
-        return obtainStorage().getHypervisor();
+    default HostPO obtainHost() {
+        return obtainStorage().getHost();
     }
 
     StoragePO obtainStorage();

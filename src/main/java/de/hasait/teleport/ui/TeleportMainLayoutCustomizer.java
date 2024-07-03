@@ -19,10 +19,12 @@ package de.hasait.teleport.ui;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import de.hasait.common.ui.MainLayoutCustomizer;
 import de.hasait.common.ui.VaadinUtil;
+import de.hasait.teleport.domain.HostPO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.LocationPO;
 import de.hasait.teleport.domain.NetworkPO;
 import de.hasait.teleport.domain.StoragePO;
+import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VolumePO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +42,11 @@ public class TeleportMainLayoutCustomizer implements MainLayoutCustomizer {
     public void populateDrawer(VerticalLayout verticalLayout) {
         VaadinUtil.addDataViewRouterLink(verticalLayout, LocationPO.class, "grid", LocationGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, NetworkPO.class, "grid", NetworkGridView.class);
+        VaadinUtil.addDataViewRouterLink(verticalLayout, HostPO.class, "grid", HostGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, HypervisorPO.class, "grid", HypervisorGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, StoragePO.class, "grid", StorageGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, VolumePO.class, "grid", VolumeGridView.class);
+        VaadinUtil.addDataViewRouterLink(verticalLayout, VirtualMachinePO.class, "grid", VirtualMachineGridView.class);
     }
 
 }

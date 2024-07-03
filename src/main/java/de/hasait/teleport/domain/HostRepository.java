@@ -16,12 +16,21 @@
 
 package de.hasait.teleport.domain;
 
-public interface HasHypervisor extends HasHost {
+import de.hasait.common.domain.SearchableRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
-    default HostPO obtainHost() {
-        return obtainHypervisor().getHost();
-    }
+@Repository
+public interface HostRepository extends SearchableRepository<HostPO, Long> {
 
-    HypervisorPO obtainHypervisor();
+    @Override
+    @Query("SELECT r FROM HostPO r WHERE r.name LIKE %:search% OR r.description LIKE %:search%")
+    Page<HostPO> search(String search, Pageable pageable);
+
+    @Override
+    @Query("SELECT COUNT(r) FROM HostPO r WHERE r.name LIKE %:search% OR r.description LIKE %:search%")
+    long searchCount(String search);
 
 }

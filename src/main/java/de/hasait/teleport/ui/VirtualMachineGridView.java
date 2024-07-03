@@ -23,21 +23,21 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import de.hasait.common.ui.AbstractCrudGrid;
 import de.hasait.common.ui.BeanUiPopulator;
 import de.hasait.common.ui.MainLayout;
-import de.hasait.teleport.domain.VolumePO;
-import de.hasait.teleport.domain.VolumeRepository;
+import de.hasait.teleport.domain.VirtualMachinePO;
+import de.hasait.teleport.domain.VirtualMachineRepository;
 import jakarta.annotation.security.PermitAll;
 
 /**
  *
  */
 @PermitAll
-@Route(value = "volumes", layout = MainLayout.class)
+@Route(value = "vms", layout = MainLayout.class)
 @SpringComponent
 @UIScope
-public class VolumeGridView extends AbstractCrudGrid<VolumePO, VolumeRepository> {
+public class VirtualMachineGridView extends AbstractCrudGrid<VirtualMachinePO, VirtualMachineRepository> {
 
-    public VolumeGridView(VolumeRepository repository, BeanUiPopulator populator) {
-        super(VolumePO.class, repository, 2, populator);
+    public VirtualMachineGridView(VirtualMachineRepository repository, BeanUiPopulator populator) {
+        super(VirtualMachinePO.class, repository, 2, populator);
     }
 
 }

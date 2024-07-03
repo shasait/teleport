@@ -18,18 +18,24 @@ package de.hasait.common.ui;
 
 import com.vaadin.flow.component.grid.Grid;
 
+import java.beans.PropertyDescriptor;
+
 public abstract class PropertyColumn<B> {
 
-    private final String propertyName;
+    private final PropertyDescriptor propertyDescriptor;
     private final int layoutPriority;
 
-    public PropertyColumn(String propertyName, int layoutPriority) {
-        this.propertyName = propertyName;
+    public PropertyColumn(PropertyDescriptor propertyDescriptor, int layoutPriority) {
+        this.propertyDescriptor = propertyDescriptor;
         this.layoutPriority = layoutPriority;
     }
 
+    public PropertyDescriptor getPropertyDescriptor() {
+        return propertyDescriptor;
+    }
+
     public String getPropertyName() {
-        return propertyName;
+        return propertyDescriptor.getName();
     }
 
     public int getLayoutPriority() {

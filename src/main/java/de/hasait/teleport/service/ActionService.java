@@ -14,18 +14,31 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.ui.puif;
+package de.hasait.teleport.service;
 
-import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
-import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.StorageDriverService;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 
-@Service
-public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
+@Service
+public class ActionService {
+
+    private final ExecutorService executorService;
+
+    public ActionService() {
+        executorService = Executors.newSingleThreadExecutor();
+    }
+
+    @PreDestroy
+    private void shutdown() {
+        executorService.shutdown();
+    }
+
+    public <R> Future<R> submit(Action<R> action) {
+        return executorService.submit(action);
     }
 
 }

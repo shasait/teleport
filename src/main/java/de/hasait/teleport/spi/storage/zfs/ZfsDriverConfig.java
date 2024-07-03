@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.api;
+package de.hasait.teleport.spi.storage.zfs;
 
-import de.hasait.common.service.Provider;
-import de.hasait.teleport.domain.HypervisorPO;
-import de.hasait.teleport.domain.VirtualMachinePO;
+public class ZfsDriverConfig {
 
-public interface VirtualMachineDriver extends Provider {
+    private String dataset;
 
-    void refresh(HypervisorPO hypervisor);
+    public String getDataset() {
+        return dataset;
+    }
 
-    void create(HypervisorPO hypervisor, VirtualMachineTO config, boolean runInstallation);
-
-    void start(VirtualMachinePO virtualMachine);
-
-    void shutdown(VirtualMachinePO virtualMachine);
-
-    void kill(VirtualMachinePO virtualMachine);
-
-    void update(VirtualMachinePO virtualMachine);
-
-    void delete(VirtualMachinePO virtualMachine);
+    public void setDataset(String dataset) {
+        this.dataset = dataset;
+    }
 
 }

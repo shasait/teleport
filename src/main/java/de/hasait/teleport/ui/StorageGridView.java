@@ -27,7 +27,7 @@ import de.hasait.common.ui.CrudForm;
 import de.hasait.common.ui.MainLayout;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.StorageRepository;
-import de.hasait.teleport.service.storage.StorageDriverService;
+import de.hasait.teleport.spi.storage.StorageDriverService;
 import jakarta.annotation.security.PermitAll;
 
 /**

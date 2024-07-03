@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.api;
+package de.hasait.teleport.domain;
 
-import java.io.Serializable;
 
-public class VolumeTO implements Serializable {
+import de.hasait.common.util.FsbFormat;
 
-    private String name;
+public enum VmState {
 
-    private long sizeBytes;
+    RUNNING(FsbFormat.LIGHT_GREEN) //
+    , //
+    SHUTOFF(FsbFormat.LIGHT_BLUE) //
+    , //
+    OTHER(FsbFormat.LIGHT_YELLOW) //
+    ;
 
-    public String getName() {
-        return name;
+    private final FsbFormat format;
+
+    VmState(FsbFormat format) {
+        this.format = format;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getSizeBytes() {
-        return sizeBytes;
-    }
-
-    public void setSizeBytes(long sizeBytes) {
-        this.sizeBytes = sizeBytes;
+    public FsbFormat getFormat() {
+        return format;
     }
 
 }

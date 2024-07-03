@@ -33,9 +33,4 @@ public class LocationPuif extends AbstractToOnePuiFactory<LocationPO, LocationRe
         return po.getName();
     }
 
-    @Override
-    protected String getColumnLabelProperty() {
-        return "name";
-    }
-
 }

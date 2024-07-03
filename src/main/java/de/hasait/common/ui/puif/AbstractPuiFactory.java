@@ -97,10 +97,10 @@ public abstract class AbstractPuiFactory<P, V, F extends Component & HasValue<?,
         String propertyName = propertyDescriptor.getName();
         int layoutPriority = determineLayoutPriority(propertyName);
 
-        return new PropertyColumn<>(propertyName, layoutPriority) {
+        return new PropertyColumn<>(propertyDescriptor, layoutPriority) {
             @Override
             public Grid.Column<B> addColumn(Grid<B> grid) {
-                return AbstractPuiFactory.this.addColumn(propertyName, determineLabel(propertyName), grid, context);
+                return AbstractPuiFactory.this.addColumn(propertyDescriptor, determineLabel(propertyName), grid, context);
             }
         };
     }
@@ -113,8 +113,8 @@ public abstract class AbstractPuiFactory<P, V, F extends Component & HasValue<?,
         return propertyClass.isAssignableFrom(propertyDescriptor.getPropertyType());
     }
 
-    protected <B> Grid.Column<B> addColumn(String propertyName, String label, Grid<B> grid, C context) {
-        Grid.Column<B> column = grid.addColumn(propertyName);
+    protected <B> Grid.Column<B> addColumn(PropertyDescriptor propertyDescriptor, String label, Grid<B> grid, C context) {
+        Grid.Column<B> column = grid.addColumn(propertyDescriptor.getName());
         column.setHeader(label);
         return column;
     }
