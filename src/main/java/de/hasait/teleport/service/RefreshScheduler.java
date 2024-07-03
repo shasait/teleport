@@ -42,7 +42,11 @@ public class RefreshScheduler {
         actionService.submit(new Action<Void>("Refresh") {
             @Override
             public Void call() throws Exception {
-                refreshApi.refresh();
+                try {
+                    refreshApi.refresh();
+                } catch (Throwable t) {
+                    log.warn("Failed", t);
+                }
                 return null;
             }
         });

@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface VolumeRepository extends SearchableRepository<VolumePO, Long> {
 
@@ -32,5 +34,8 @@ public interface VolumeRepository extends SearchableRepository<VolumePO, Long> {
     @Override
     @Query("SELECT COUNT(r) FROM VolumePO r WHERE r.name LIKE %:search%")
     long searchCount(String search);
+
+    @Query("SELECT v FROM VolumePO v WHERE v.dev = :dev AND v.storage.host.name = :host")
+    List<VolumePO> findByHostAndDev(String host, String dev);
 
 }

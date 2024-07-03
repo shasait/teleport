@@ -35,13 +35,14 @@ import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "VIRTUAL_MACHINE", uniqueConstraints = { //
         @UniqueConstraint(name = "UC_VM_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"}), //
         @UniqueConstraint(name = "UC_VM_HV_UUID", columnNames = {"HYPERVISOR_ID", "UUID"}) //
 })
-public class VirtualMachinePO implements IdAndVersion {
+public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
 
     @Id
     @GeneratedValue
@@ -94,7 +95,7 @@ public class VirtualMachinePO implements IdAndVersion {
     private int vgaMemKb;
 
     @OneToMany(mappedBy = "virtualMachine", cascade = CascadeType.ALL)
-    @OrderBy("name ASC")
+    @OrderBy("dev ASC")
     private List<VolumeAttachmentPO> volumeAttachments = new ArrayList<>();
 
     @OneToMany(mappedBy = "virtualMachine", cascade = CascadeType.ALL)
@@ -219,4 +220,13 @@ public class VirtualMachinePO implements IdAndVersion {
         return networkInterfaces;
     }
 
+    public Optional<VolumeAttachmentPO> findVolumeAttachmentByDev(String dev) {
+        return getVolumeAttachments().stream().filter(it -> it.getDev().equals(dev)).findAny();
+    }
+
+    @Override
+    public VirtualMachinePO obtainVirtualMachine() {
+        return this;
+    }
+    
 }

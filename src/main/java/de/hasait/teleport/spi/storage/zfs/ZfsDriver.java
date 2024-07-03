@@ -22,8 +22,6 @@ import de.hasait.common.util.cli.InheritPIOStrategy;
 import de.hasait.common.util.cli.WriteBytesPIOStrategy;
 import de.hasait.teleport.CliConfig;
 import de.hasait.teleport.api.CanResult;
-import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.VolumeTO;
 import de.hasait.teleport.domain.HasStorage;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
@@ -33,6 +31,8 @@ import de.hasait.teleport.domain.VolumeSnapshotPO;
 import de.hasait.teleport.domain.VolumeSnapshotRepository;
 import de.hasait.teleport.domain.VolumeState;
 import de.hasait.teleport.service.SnapshotNameGenerator;
+import de.hasait.teleport.spi.storage.StorageDriver;
+import de.hasait.teleport.spi.storage.VolumeTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +99,14 @@ public class ZfsDriver implements StorageDriver {
             return determineZfsObject(hasStorage) + "@" + snapshotData.getName();
         }
         throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
+    }
+
+    public static String determineZfsDevice(StoragePO storage, String volumeName) {
+        return "/dev/zvol/" + determineZfsVolume(storage, volumeName);
+    }
+
+    public static String determineZfsDevice(VolumePO volume) {
+        return "/dev/zvol/" + determineZfsVolume(volume);
     }
 
     private static final String VOLUME_REGEX = "(?<v>[^@]+)";
@@ -485,7 +493,8 @@ public class ZfsDriver implements StorageDriver {
         boolean dryMode = !sexe.executeAndWaitExit0(bashCommand, new WriteBytesPIOStrategy(bashZfsPipe.toString()), InheritPIOStrategy.INSTANCE, InheritPIOStrategy.INSTANCE, Long.MAX_VALUE, TimeUnit.MILLISECONDS, true);
         if (dryMode) {
             VolumePO senderVolume = sender.getVolume();
-            VolumePO receiverVolume = new VolumePO(receiverStorage, receiverVolumeName, senderVolume.getSizeBytes(), VolumeState.INACTIVE, senderVolume.getUsedBytes());
+            String dev = determineZfsDevice(receiverStorage, receiverVolumeName);
+            VolumePO receiverVolume = new VolumePO(receiverStorage, receiverVolumeName, dev, senderVolume.getSizeBytes(), VolumeState.INACTIVE, senderVolume.getUsedBytes());
             new VolumeSnapshotPO(receiverVolume, sender.getData().getName(), sender.getUsedBytes(), LocalDateTime.now());
         }
 
@@ -588,7 +597,8 @@ public class ZfsDriver implements StorageDriver {
                         volume.setUsedBytes(usedbydataset);
                         volume.setState(volumeState);
                     } else {
-                        volume = new VolumePO(storage, volumeName, volsize, volumeState, usedbydataset);
+                        String dev = determineZfsDevice(storage, volumeName);
+                        volume = new VolumePO(storage, volumeName, dev, volsize, volumeState, usedbydataset);
                     }
                     volumeRepository.save(volume);
                     return;

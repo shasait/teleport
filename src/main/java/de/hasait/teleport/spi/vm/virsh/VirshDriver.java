@@ -19,19 +19,22 @@ package de.hasait.teleport.spi.vm.virsh;
 import com.google.gson.Gson;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.teleport.CliConfig;
-import de.hasait.teleport.spi.vm.HypervisorDriver;
-import de.hasait.teleport.spi.vm.VirtualMachineTO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VmState;
+import de.hasait.teleport.domain.VolumeAttachmentPO;
+import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
+import de.hasait.teleport.spi.vm.HypervisorDriver;
+import de.hasait.teleport.spi.vm.VirtualMachineTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
@@ -42,6 +45,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class VirshDriver implements HypervisorDriver {
@@ -189,12 +195,46 @@ public class VirshDriver implements HypervisorDriver {
         virtualMachine.setCores(vcpu);
 
         Element firstDevicesElement = (Element) documentElement.getElementsByTagName("devices").item(0);
+
         Element firstVideoElement = (Element) firstDevicesElement.getElementsByTagName("video").item(0);
         Element firstVideoModelElement = (Element) firstVideoElement.getElementsByTagName("model").item(0);
 
         int videoRam = Integer.parseInt(firstVideoModelElement.getAttribute("ram"));
         virtualMachine.setVgaMemKb(videoRam);
         virtualMachine.setVideoModel(firstVideoModelElement.getAttribute("type"));
+
+        Set<VolumeAttachmentPO> volumeAttachments = new HashSet<>();
+
+        NodeList diskElements = firstDevicesElement.getElementsByTagName("disk");
+        for (int i = 0; i < diskElements.getLength(); i++) {
+            Element diskElement = (Element) diskElements.item(i);
+            Element firstSourceElement = (Element) diskElement.getElementsByTagName("source").item(0);
+            if (firstSourceElement == null) {
+                continue;
+            }
+            String sdev = firstSourceElement.getAttribute("dev");
+
+            List<VolumePO> volumes = volumeRepository.findByHostAndDev(virtualMachine.getHypervisor().getHost().getName(), sdev);
+            if (volumes.size() == 1) {
+                VolumePO volume = volumes.get(0);
+
+                Element firstTargetElement = (Element) diskElement.getElementsByTagName("target").item(0);
+                String tdev = firstTargetElement.getAttribute("dev");
+
+                VolumeAttachmentPO existingVolumeAttachment = virtualMachine.findVolumeAttachmentByDev(tdev).orElse(null);
+                VolumeAttachmentPO volumeAttachment;
+                if (existingVolumeAttachment != null) {
+                    volumeAttachment = existingVolumeAttachment;
+                    volumeAttachment.setVolume(volume);
+                } else {
+                    volumeAttachment = new VolumeAttachmentPO(virtualMachine, tdev, volume);
+                }
+
+                volumeAttachments.add(volumeAttachment);
+            }
+        }
+
+        virtualMachine.getVolumeAttachments().retainAll(volumeAttachments);
     }
 
 }

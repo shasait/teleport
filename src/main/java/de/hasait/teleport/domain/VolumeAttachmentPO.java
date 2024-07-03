@@ -31,8 +31,8 @@ import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "VOLUME_ATTACHMENT", uniqueConstraints = { //
-        @UniqueConstraint(name = "UC_VA_VM_NAME", columnNames = {"VM_ID", "NAME"}), //
-        @UniqueConstraint(name = "UC_VA_VM_ID", columnNames = {"VM_ID", "VOLUME_ID"}) //
+        @UniqueConstraint(name = "UC_VA_VM_DEV", columnNames = {"VM_ID", "DEV"}), //
+        @UniqueConstraint(name = "UC_VA_VM_VOL", columnNames = {"VM_ID", "VOLUME_ID"}) //
 })
 public class VolumeAttachmentPO implements IdAndVersion {
 
@@ -47,14 +47,26 @@ public class VolumeAttachmentPO implements IdAndVersion {
     @JoinColumn(name = "VM_ID", nullable = false)
     private VirtualMachinePO virtualMachine;
 
-    @Size(min = 1, max = 16)
+    @Size(min = 1, max = 32)
     @NotNull
-    @Column(name = "NAME", nullable = false)
-    private String name;
+    @Column(name = "DEV", nullable = false)
+    private String dev;
 
     @ManyToOne
     @JoinColumn(name = "VOLUME_ID", nullable = false)
     private VolumePO volume;
+
+    public VolumeAttachmentPO() {
+    }
+
+    public VolumeAttachmentPO(VirtualMachinePO virtualMachine, String dev, VolumePO volume) {
+        this.virtualMachine = virtualMachine;
+        this.dev = dev;
+        this.volume = volume;
+
+        virtualMachine.getVolumeAttachments().add(this);
+        volume.getVolumeAttachments().add(this);
+    }
 
     @Override
     public Long getId() {
@@ -83,12 +95,12 @@ public class VolumeAttachmentPO implements IdAndVersion {
         this.virtualMachine = virtualMachine;
     }
 
-    public String getName() {
-        return name;
+    public String getDev() {
+        return dev;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setDev(String dev) {
+        this.dev = dev;
     }
 
     public VolumePO getVolume() {

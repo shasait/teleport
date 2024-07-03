@@ -58,6 +58,11 @@ public final class VolumePO implements IdAndVersion, HasVolume {
     @Column(name = "NAME", nullable = false)
     private String name;
 
+    @Size(min = 1, max = 256)
+    @NotNull
+    @Column(name = "DEV", nullable = false)
+    private String dev;
+
     @Min(0)
     @Column(name = "SIZE_BYTES", nullable = false)
     private long sizeBytes;
@@ -73,12 +78,16 @@ public final class VolumePO implements IdAndVersion, HasVolume {
     @OneToMany(mappedBy = "volume", cascade = CascadeType.ALL)
     private List<VolumeSnapshotPO> snapshots = new ArrayList<>();
 
+    @OneToMany(mappedBy = "volume", cascade = CascadeType.ALL)
+    private List<VolumeAttachmentPO> volumeAttachments = new ArrayList<>();
+
     public VolumePO() {
     }
 
-    public VolumePO(StoragePO storage, String name, long sizeBytes, VolumeState state, long usedBytes) {
+    public VolumePO(StoragePO storage, String name, String dev, long sizeBytes, VolumeState state, long usedBytes) {
         this.storage = storage;
         this.name = name;
+        this.dev = dev;
         this.sizeBytes = sizeBytes;
         this.state = state;
         this.usedBytes = usedBytes;
@@ -121,6 +130,14 @@ public final class VolumePO implements IdAndVersion, HasVolume {
         this.name = name;
     }
 
+    public String getDev() {
+        return dev;
+    }
+
+    public void setDev(String dev) {
+        this.dev = dev;
+    }
+
     public long getSizeBytes() {
         return sizeBytes;
     }
@@ -147,6 +164,10 @@ public final class VolumePO implements IdAndVersion, HasVolume {
 
     public List<VolumeSnapshotPO> getSnapshots() {
         return snapshots;
+    }
+
+    public List<VolumeAttachmentPO> getVolumeAttachments() {
+        return volumeAttachments;
     }
 
     public Optional<VolumeSnapshotPO> findSnapshotByName(String name) {
