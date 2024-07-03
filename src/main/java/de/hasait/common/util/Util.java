@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.scheduling.support.CronExpression;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,7 +42,7 @@ public class Util {
 
     public static final Random RANDOM = new Random();
 
-    private static final List<Pair<Long, String>> UNITS;
+    private static final LinkedList<Pair<Long, String>> TIME_UNITS;
 
     static {
         List<Pair<Long, String>> units = new ArrayList<>();
@@ -49,37 +52,95 @@ public class Util {
         units.add(Pair.of(TimeUnit.MINUTES.toMillis(1), "m"));
         units.add(Pair.of(TimeUnit.SECONDS.toMillis(1), "s"));
         units.add(Pair.of(1L, "ms"));
-        UNITS = Collections.unmodifiableList(units);
+        TIME_UNITS = new LinkedList<>(units);
     }
+
+    private static final LinkedList<Pair<Long, String>> BYTE_UNITS;
+
+    static {
+        long kib = 1024;
+        long mib = kib * 1024;
+        long gib = mib * 1024;
+        long tib = gib * 1024;
+        List<Pair<Long, String>> units = new ArrayList<>();
+        units.add(Pair.of(tib, "TiB"));
+        units.add(Pair.of(gib, "GiB"));
+        units.add(Pair.of(mib, "MiB"));
+        units.add(Pair.of(kib, "KiB"));
+        units.add(Pair.of(1L, "B"));
+        BYTE_UNITS = new LinkedList<>(units);
+    }
+
+    public static DecimalFormat DECIMAL_FORMAT_0_0 = new DecimalFormat("0.0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+    public static DecimalFormat DECIMAL_FORMAT_0_00 = new DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+    public static DecimalFormat DECIMAL_FORMAT_0_000 = new DecimalFormat("0.000", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
     public static String millisToHuman(LocalDateTime seed, LocalDateTime next, int limit) {
         long millis = Duration.between(seed, next).toMillis();
         return millisToHuman(millis, limit);
     }
 
+    public static String secondsToHuman(int seconds, int limit) {
+        return millisToHuman(TimeUnit.MILLISECONDS.convert(seconds, TimeUnit.SECONDS), limit);
+    }
+
     public static String millisToHuman(long millis, int limit) {
+        return toHuman(millis, limit, TIME_UNITS);
+    }
+
+    public static String bytesToHuman(long bytes) {
+        return toHuman(bytes, 100, BYTE_UNITS);
+    }
+
+    public static long humanToBytes(String stringValue) {
+        return fromHuman(stringValue, BYTE_UNITS);
+    }
+
+    private static String toHuman(long longValue, int limit, LinkedList<Pair<Long, String>> unitList) {
+        if (longValue == 0) {
+            return "0" + unitList.getLast().getRight();
+        }
+
         List<String> result = new ArrayList<>();
 
-        Iterator<Pair<Long, String>> i = UNITS.iterator();
-        while (i.hasNext() && millis > 0 && result.size() < limit) {
+        Iterator<Pair<Long, String>> i = unitList.iterator();
+        while (i.hasNext() && longValue > 0 && result.size() < limit) {
             Pair<Long, String> pair = i.next();
-            millis = appendUnit(millis, pair.getLeft(), pair.getRight(), result);
+            longValue = appendUnit(longValue, pair.getLeft(), pair.getRight(), result);
         }
 
         return String.join(" ", result);
     }
 
-    public static String secondsToHuman(int seconds, int limit) {
-        return millisToHuman(TimeUnit.MILLISECONDS.convert(seconds, TimeUnit.SECONDS), limit);
+    private static long fromHuman(String stringValue, LinkedList<Pair<Long, String>> unitList) {
+        String[] split = stringValue.split(" ");
+
+        long result = 0;
+
+        int index = 0;
+
+        Iterator<Pair<Long, String>> i = unitList.iterator();
+        while (i.hasNext() && index < split.length) {
+            Pair<Long, String> pair = i.next();
+            String unit = pair.getRight();
+            String s = split[index];
+            if (s.endsWith(unit)) {
+                long units = Long.parseLong(s.substring(0, s.length() - unit.length()));
+                result += units * pair.getLeft();
+                index++;
+            }
+        }
+
+        return result;
     }
 
-    private static long appendUnit(long millis, long unitMillis, String unit, List<String> result) {
-        if (millis >= unitMillis) {
-            long units = millis / unitMillis;
+    private static long appendUnit(long value, long unitValue, String unit, List<String> result) {
+        if (value >= unitValue) {
+            long units = value / unitValue;
             result.add(units + unit);
-            return millis - units * unitMillis;
+            return value - units * unitValue;
         }
-        return millis;
+        return value;
     }
 
     public static <T> void parse(String string, String typeHint, Function<String, T> parser, String name, Consumer<T> consumer) {

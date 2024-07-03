@@ -31,11 +31,15 @@ public abstract class AbstractTextFieldForNumberPuiFactory<N extends Number, C> 
     protected final Class<?> primitiveClass;
     protected final Converter<String, N> converter;
 
-    public AbstractTextFieldForNumberPuiFactory(Class<N> propertyClass, Class<?> primitiveClass, Supplier<C> contextFactory, Converter<String, N> converter) {
-        super(propertyClass, 2000, contextFactory);
+    public AbstractTextFieldForNumberPuiFactory(Class<N> propertyClass, int priority, Class<?> primitiveClass, Supplier<C> contextFactory, Converter<String, N> converter) {
+        super(propertyClass, priority, contextFactory);
 
         this.primitiveClass = primitiveClass;
         this.converter = converter;
+    }
+
+    public AbstractTextFieldForNumberPuiFactory(Class<N> propertyClass, Class<?> primitiveClass, Supplier<C> contextFactory, Converter<String, N> converter) {
+        this(propertyClass, 2000, primitiveClass, contextFactory, converter);
     }
 
     @Override
