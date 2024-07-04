@@ -17,20 +17,20 @@
 package de.hasait.teleport.ui.puif;
 
 import de.hasait.common.ui.puif.AbstractToOnePuiFactory;
-import de.hasait.teleport.domain.HypervisorPO;
-import de.hasait.teleport.domain.HypervisorRepository;
+import de.hasait.teleport.domain.VolumeAttachmentPO;
+import de.hasait.teleport.domain.VolumeAttachmentRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class HypervisorPuif extends AbstractToOnePuiFactory<HypervisorPO, HypervisorRepository, Void> {
+public class VolumeAttachmentPuif extends AbstractToOnePuiFactory<VolumeAttachmentPO, VolumeAttachmentRepository, Void> {
 
-    public HypervisorPuif(HypervisorRepository repository) {
-        super(HypervisorPO.class, () -> null, repository);
+    public VolumeAttachmentPuif(VolumeAttachmentRepository repository) {
+        super(VolumeAttachmentPO.class, () -> null, repository);
     }
 
     @Override
-    protected String getPoLabel(HypervisorPO po) {
-        return po.obtainHost().getName() + "/" + po.getName();
+    protected String getPoLabel(VolumeAttachmentPO po) {
+        return po.obtainHost().getName() + "/" + po.obtainVirtualMachine().getName() + " -> " + po.obtainStorage().getName() + "/" + po.obtainVolume().getName();
     }
 
 }

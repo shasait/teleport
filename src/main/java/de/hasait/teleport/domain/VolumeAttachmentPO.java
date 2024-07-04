@@ -34,7 +34,7 @@ import jakarta.validation.constraints.Size;
         @UniqueConstraint(name = "UC_VA_VM_DEV", columnNames = {"VM_ID", "DEV"}), //
         @UniqueConstraint(name = "UC_VA_VM_VOL", columnNames = {"VM_ID", "VOLUME_ID"}) //
 })
-public class VolumeAttachmentPO implements IdAndVersion {
+public class VolumeAttachmentPO implements IdAndVersion, HasVirtualMachine, HasVolume {
 
     @Id
     @GeneratedValue
@@ -109,6 +109,21 @@ public class VolumeAttachmentPO implements IdAndVersion {
 
     public void setVolume(VolumePO volume) {
         this.volume = volume;
+    }
+
+    @Override
+    public VirtualMachinePO obtainVirtualMachine() {
+        return virtualMachine;
+    }
+
+    @Override
+    public VolumePO obtainVolume() {
+        return volume;
+    }
+
+    @Override
+    public HostPO obtainHost() {
+        return virtualMachine.obtainHost();
     }
 
 }

@@ -25,6 +25,7 @@ import de.hasait.teleport.domain.LocationPO;
 import de.hasait.teleport.domain.NetworkPO;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
+import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public class TeleportMainLayoutCustomizer implements MainLayoutCustomizer {
         VaadinUtil.addDataViewRouterLink(verticalLayout, StoragePO.class, "grid", StorageGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, VolumePO.class, "grid", VolumeGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, VirtualMachinePO.class, "grid", VirtualMachineGridView.class);
+        VaadinUtil.addDataViewRouterLink(verticalLayout, VolumeAttachmentPO.class, "grid", VolumeAttachmentGridView.class);
     }
 
 }

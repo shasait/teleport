@@ -30,7 +30,7 @@ public class StoragePuif extends AbstractToOnePuiFactory<StoragePO, StorageRepos
 
     @Override
     protected String getPoLabel(StoragePO po) {
-        return po.getHost().getName() + "/" + po.getName();
+        return po.obtainHost().getName() + "/" + po.getName();
     }
 
 }
