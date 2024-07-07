@@ -16,9 +16,38 @@
 
 package de.hasait.teleport.api;
 
-import org.springframework.transaction.annotation.Transactional;
+import java.io.Serializable;
 
-public interface RefreshApi {
-    @Transactional
-    void refresh();
+public class VirtualMachineTO implements Serializable {
+
+    private HypervisorReferenceTO hypervisor;
+
+    private String name;
+
+    private VmState state;
+
+    public HypervisorReferenceTO getHypervisor() {
+        return hypervisor;
+    }
+
+    public void setHypervisor(HypervisorReferenceTO hypervisor) {
+        this.hypervisor = hypervisor;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public VmState getState() {
+        return state;
+    }
+
+    public void setState(VmState state) {
+        this.state = state;
+    }
+    
 }

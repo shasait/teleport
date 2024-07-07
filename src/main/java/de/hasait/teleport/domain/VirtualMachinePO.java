@@ -17,6 +17,7 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
+import de.hasait.teleport.api.VmState;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -80,6 +81,9 @@ public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
     @Min(1)
     @Column(name = "MEM_MB")
     private int memMb;
+
+    @Column(name = "MEM_HUGE_PAGES")
+    private boolean memHugePages;
 
     @Min(0)
     @Column(name = "SWAP_MB")
@@ -188,6 +192,14 @@ public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
         this.memMb = memMb;
     }
 
+    public boolean isMemHugePages() {
+        return memHugePages;
+    }
+
+    public void setMemHugePages(boolean memHugePages) {
+        this.memHugePages = memHugePages;
+    }
+
     public int getSwapMb() {
         return swapMb;
     }
@@ -228,5 +240,5 @@ public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
     public VirtualMachinePO obtainVirtualMachine() {
         return this;
     }
-    
+
 }

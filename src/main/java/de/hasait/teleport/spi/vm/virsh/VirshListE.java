@@ -17,7 +17,7 @@
 package de.hasait.teleport.spi.vm.virsh;
 
 
-import de.hasait.teleport.domain.VmState;
+import de.hasait.teleport.api.VmState;
 
 import java.util.ArrayList;
 import java.util.List;

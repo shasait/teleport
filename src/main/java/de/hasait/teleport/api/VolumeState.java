@@ -14,24 +14,40 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.domain;
+package de.hasait.teleport.api;
 
 
 import de.hasait.common.util.FsbFormat;
 
-public enum VmState {
+public enum VolumeState {
 
-    RUNNING(FsbFormat.LIGHT_GREEN) //
+    ACTIVE("active", FsbFormat.LIGHT_PURPLE) //
     , //
-    SHUTOFF(FsbFormat.LIGHT_BLUE) //
+    DIRTY("dirty", FsbFormat.LIGHT_YELLOW) //
     , //
-    OTHER(FsbFormat.LIGHT_YELLOW) //
+    INACTIVE("inactive", FsbFormat.LIGHT_BLUE) //
     ;
+
+    public static VolumeState valueOfExternalValue(String externalValue) {
+        for (VolumeState resourceState : values()) {
+            if (resourceState.externalValue.equals(externalValue)) {
+                return resourceState;
+            }
+        }
+        throw new RuntimeException("Unsupported externalValue: " + externalValue);
+    }
+
+    private final String externalValue;
 
     private final FsbFormat format;
 
-    VmState(FsbFormat format) {
+    VolumeState(String externalValue, FsbFormat format) {
+        this.externalValue = externalValue;
         this.format = format;
+    }
+
+    public String getExternalValue() {
+        return externalValue;
     }
 
     public FsbFormat getFormat() {

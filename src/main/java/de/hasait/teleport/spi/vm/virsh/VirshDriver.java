@@ -17,17 +17,18 @@
 package de.hasait.teleport.spi.vm.virsh;
 
 import com.google.gson.Gson;
+import de.hasait.common.util.XmlUtil;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.teleport.CliConfig;
+import de.hasait.teleport.api.VirtualMachineCreateTO;
+import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VirtualMachineRepository;
-import de.hasait.teleport.domain.VmState;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
-import de.hasait.teleport.spi.vm.VirtualMachineTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,7 +116,7 @@ public class VirshDriver implements HypervisorDriver {
     }
 
     @Override
-    public void create(HypervisorPO hypervisor, VirtualMachineTO config, boolean runInstallation) {
+    public void create(HypervisorPO hypervisor, VirtualMachineCreateTO config, boolean runInstallation) {
 
     }
 
@@ -179,7 +180,7 @@ public class VirshDriver implements HypervisorDriver {
         String uuid = documentElement.getElementsByTagName("uuid").item(0).getTextContent();
         virtualMachine.setUuid(uuid);
 
-        Element firstMemoryElement = (Element) documentElement.getElementsByTagName("memory").item(0);
+        Element firstMemoryElement = XmlUtil.getFirstElement(documentElement, "memory").orElseThrow();
         int memValue = Integer.parseInt(firstMemoryElement.getTextContent());
         String memUnit = firstMemoryElement.getAttribute("unit");
 
@@ -191,15 +192,17 @@ public class VirshDriver implements HypervisorDriver {
         }
         virtualMachine.setMemMb(memMb);
 
-        int vcpu = Integer.parseInt(documentElement.getElementsByTagName("vcpu").item(0).getTextContent());
+        virtualMachine.setMemHugePages(XmlUtil.getFirstElement(documentElement, "memoryBacking", "hugepages").isPresent());
+
+        int vcpu = Integer.parseInt(XmlUtil.getFirstElement(documentElement, "vcpu").orElseThrow().getTextContent());
         virtualMachine.setCores(vcpu);
 
-        Element firstDevicesElement = (Element) documentElement.getElementsByTagName("devices").item(0);
+        Element firstDevicesElement = XmlUtil.getFirstElement(documentElement, "devices").orElseThrow();
 
-        Element firstVideoElement = (Element) firstDevicesElement.getElementsByTagName("video").item(0);
-        Element firstVideoModelElement = (Element) firstVideoElement.getElementsByTagName("model").item(0);
+        Element firstVideoElement = XmlUtil.getFirstElement(firstDevicesElement, "video").orElseThrow();
+        Element firstVideoModelElement = XmlUtil.getFirstElement(firstVideoElement, "model").orElseThrow();
 
-        int videoRam = Integer.parseInt(firstVideoModelElement.getAttribute("ram"));
+        int videoRam = XmlUtil.getIntAttribute(firstVideoModelElement, "ram");
         virtualMachine.setVgaMemKb(videoRam);
         virtualMachine.setVideoModel(firstVideoModelElement.getAttribute("type"));
 
@@ -208,7 +211,7 @@ public class VirshDriver implements HypervisorDriver {
         NodeList diskElements = firstDevicesElement.getElementsByTagName("disk");
         for (int i = 0; i < diskElements.getLength(); i++) {
             Element diskElement = (Element) diskElements.item(i);
-            Element firstSourceElement = (Element) diskElement.getElementsByTagName("source").item(0);
+            Element firstSourceElement = XmlUtil.getFirstElement(diskElement, "source").orElse(null);
             if (firstSourceElement == null) {
                 continue;
             }

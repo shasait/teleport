@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.api;
 
-public interface RefreshService {
+import java.io.Serializable;
 
-    void refresh();
+public class VirtualMachineCreateTO implements Serializable {
+
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    // TODO incomplete
 
 }

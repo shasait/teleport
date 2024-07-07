@@ -19,7 +19,7 @@ package de.hasait.common.ui.puif;
 import com.vaadin.flow.data.binder.Result;
 import com.vaadin.flow.data.binder.ValueContext;
 import com.vaadin.flow.data.converter.Converter;
-import de.hasait.common.util.Util;
+import de.hasait.common.util.Unit;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +35,7 @@ public class BytesPuiFactory extends AbstractTextFieldForNumberPuiFactory<Long, 
                 if (longValue == null) {
                     return null;
                 }
-                return Util.bytesToHuman(longValue);
+                return Unit.B1024.toHuman(longValue);
             }
 
             @Override
@@ -46,7 +46,7 @@ public class BytesPuiFactory extends AbstractTextFieldForNumberPuiFactory<Long, 
 
                 long longValue;
                 try {
-                    longValue = Util.humanToBytes(stringValue);
+                    longValue = Unit.B1024.fromHuman(stringValue);
                 } catch (Exception e) {
                     return Result.error(e.getMessage());
                 }

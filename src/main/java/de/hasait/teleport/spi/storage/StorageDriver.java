@@ -17,12 +17,13 @@
 package de.hasait.teleport.spi.storage;
 
 import de.hasait.common.service.Provider;
-import de.hasait.teleport.api.CanResult;
+import de.hasait.teleport.api.VolumeState;
 import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeSnapshotPO;
-import de.hasait.teleport.domain.VolumeState;
+import de.hasait.teleport.service.CanResult;
+import de.hasait.teleport.service.VolumeTO;
 
 public interface StorageDriver extends Provider {
 

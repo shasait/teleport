@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.api;
+package de.hasait.teleport.service;
 
 import java.util.HashMap;
 import java.util.Map;

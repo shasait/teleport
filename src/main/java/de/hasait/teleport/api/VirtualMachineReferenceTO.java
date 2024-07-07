@@ -14,10 +14,30 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.api;
 
-public interface RefreshService {
+import java.io.Serializable;
 
-    void refresh();
+public class VirtualMachineReferenceTO implements Serializable {
+
+    private HypervisorReferenceTO hypervisor;
+
+    private String name;
+
+    public HypervisorReferenceTO getHypervisor() {
+        return hypervisor;
+    }
+
+    public void setHypervisor(HypervisorReferenceTO hypervisor) {
+        this.hypervisor = hypervisor;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
 }

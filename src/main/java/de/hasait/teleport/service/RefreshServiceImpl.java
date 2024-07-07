@@ -16,39 +16,32 @@
 
 package de.hasait.teleport.service;
 
+import de.hasait.teleport.service.storage.StorageService;
+import de.hasait.teleport.service.vm.HypervisorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class RefreshScheduler {
+public class RefreshServiceImpl implements RefreshService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ActionService actionService;
-    private final RefreshService refreshService;
+    private final StorageService storageService;
+    private final HypervisorService hypervisorService;
 
-    public RefreshScheduler(ActionService actionService, RefreshService refreshService) {
-        this.actionService = actionService;
-        this.refreshService = refreshService;
+    public RefreshServiceImpl(StorageService storageService, HypervisorService hypervisorService) {
+        this.storageService = storageService;
+        this.hypervisorService = hypervisorService;
     }
 
-    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
-    public void scheduleFixedDelayTask() {
-        actionService.submit(new Action<Void>("Refresh") {
-            @Override
-            public Void call() throws Exception {
-                try {
-                    refreshService.refresh();
-                } catch (Throwable t) {
-                    log.warn("Failed", t);
-                }
-                return null;
-            }
-        });
+    @Override
+    @Transactional
+    public void refresh() {
+        log.info("Refreshing...");
+        storageService.refreshAll();
+        hypervisorService.refreshAll();
     }
 
 }

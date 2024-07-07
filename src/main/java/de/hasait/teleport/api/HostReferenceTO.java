@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.vm;
+package de.hasait.teleport.api;
 
 import java.io.Serializable;
 
-public class VirtualMachineTO implements Serializable {
+public class HostReferenceTO implements Serializable {
 
     private String name;
 

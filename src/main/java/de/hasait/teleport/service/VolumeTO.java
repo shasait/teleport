@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.storage;
+package de.hasait.teleport.service;
 
 import java.io.Serializable;
 
