@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport;
+package de.hasait.common.ui;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.orm.hibernate5.support.OpenSessionInViewFilter;
 
-/**
- *
- */
 @Configuration
-public class ApplicationConfiguration {
+public class OsivConfiguration {
 
     @Bean
-    public TaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-        threadPoolTaskScheduler.setPoolSize(4);
-        threadPoolTaskScheduler.setThreadNamePrefix("TaskScheduler");
-        return threadPoolTaskScheduler;
+    public OpenSessionInViewFilter openSessionInViewFilter() {
+        OpenSessionInViewFilter filter = new OpenSessionInViewFilter();
+        filter.setSessionFactoryBeanName("entityManagerFactory");
+        return filter;
     }
 
 }

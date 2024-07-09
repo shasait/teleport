@@ -123,17 +123,17 @@ public final class CrudForm<PO extends IdAndVersion, R extends SearchableReposit
         }
     }
 
-    private void addSpacer() {
+    public void addSpacer() {
         add(new Span(StringUtils.EMPTY));
     }
 
-    private void addHeader(String text, int colspan) {
+    public void addHeader(String text, int colspan) {
         H4 heading = new H4(text);
         heading.getStyle().set("margin-top", "1em");
         add(heading, colspan);
     }
 
-    private void addButtonToForm(Component component) {
+    public void addButtonToForm(Component component) {
         formButtonLayout.add(component);
     }
 

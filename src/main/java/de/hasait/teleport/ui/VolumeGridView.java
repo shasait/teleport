@@ -17,15 +17,20 @@
 package de.hasait.teleport.ui;
 
 
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import de.hasait.common.ui.AbstractCrudGrid;
 import de.hasait.common.ui.BeanUiPopulator;
+import de.hasait.common.ui.CrudForm;
 import de.hasait.common.ui.MainLayout;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
 import jakarta.annotation.security.PermitAll;
+
+import java.util.stream.Collectors;
 
 /**
  *
@@ -38,6 +43,23 @@ public class VolumeGridView extends AbstractCrudGrid<VolumePO, VolumeRepository>
 
     public VolumeGridView(VolumeRepository repository, BeanUiPopulator populator) {
         super(VolumePO.class, repository, 2, populator);
+    }
+
+    @Override
+    protected void customizeCrudGrid(Grid<VolumePO> crudGrid) {
+        super.customizeCrudGrid(crudGrid);
+
+        Grid.Column<VolumePO> volumeAttachmentsColumn = crudGrid.addColumn(po -> po.getVolumeAttachments().size());
+        volumeAttachmentsColumn.setHeader("VolumeAttachments");
+    }
+
+    @Override
+    protected void customizeCrudForm(CrudForm<VolumePO, VolumeRepository> crudForm) {
+        super.customizeCrudForm(crudForm);
+
+        TextField textField = new TextField("VolumeAttachments");
+        crudForm.add(textField);
+        crudForm.getBinder().forField(textField).bindReadOnly(po -> po.getVolumeAttachments().stream().map(va -> va.getDev() + "=" + va.getVirtualMachine().getName()).collect(Collectors.joining("; ")));
     }
 
 }
