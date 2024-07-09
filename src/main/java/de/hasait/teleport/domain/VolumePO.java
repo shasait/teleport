@@ -171,6 +171,8 @@ public final class VolumePO implements IdAndVersion, HasVolume {
         return volumeAttachments;
     }
 
+    // Non properties to not conflict with bean reflection
+
     public Optional<VolumeSnapshotPO> findSnapshotByName(String name) {
         return getSnapshots().stream().filter(it -> it.getData().getName().equals(name)).findAny();
     }
@@ -180,24 +182,24 @@ public final class VolumePO implements IdAndVersion, HasVolume {
         return this;
     }
 
-    public boolean isActive() {
+    public boolean stateIsActive() {
         return state == VolumeState.ACTIVE;
     }
 
-    public boolean isDirty() {
+    public boolean stateIsDirty() {
         return state == VolumeState.DIRTY;
     }
 
-    public boolean isActiveOrDirty() {
-        return isActive() || isDirty();
+    public boolean stateIsActiveOrDirty() {
+        return stateIsActive() || stateIsDirty();
     }
 
-    public boolean isInactive() {
+    public boolean stateIsInactive() {
         return state == VolumeState.INACTIVE;
     }
 
-    public boolean isDirtyOrInactive() {
-        return isDirty() || isInactive();
+    public boolean stateIsDirtyOrInactive() {
+        return stateIsDirty() || stateIsInactive();
     }
 
 }

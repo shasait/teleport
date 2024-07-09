@@ -235,7 +235,7 @@ public class ZfsDriver implements StorageDriver {
 
     @Override
     public CanResult canUpdate(VolumePO volume, VolumeTO config) {
-        if (volume.isActive()) {
+        if (volume.stateIsActive()) {
             return CanResult.invalid("Volume " + volume + " is active");
         }
         if (!volume.getName().equals(config.getName())) {
@@ -300,7 +300,7 @@ public class ZfsDriver implements StorageDriver {
     @Override
     public void deactivate(VolumePO volume) {
         // this check is needed to prevent changing INACTIVE to DIRTY
-        if (!volume.isActive()) {
+        if (!volume.stateIsActive()) {
             throw new IllegalStateException("Volume is not active: " + volume);
         }
 
@@ -309,7 +309,7 @@ public class ZfsDriver implements StorageDriver {
 
     @Override
     public void delete(VolumePO volume) {
-        if (volume.isActiveOrDirty()) {
+        if (volume.stateIsActiveOrDirty()) {
             throw new IllegalStateException("Volume is active or dirty: " + volume);
         }
 
@@ -364,10 +364,10 @@ public class ZfsDriver implements StorageDriver {
                 throw new RuntimeException("Snapshot already exists: " + snapshotFullName);
             }
 
-            if (volume.isActive() && snapshotData.isConsistent()) {
+            if (volume.stateIsActive() && snapshotData.isConsistent()) {
                 throw new IllegalArgumentException("Cannot create consistent Snapshot for active Volume: " + snapshotFullName);
             }
-            if (volume.isDirtyOrInactive() && !snapshotData.isConsistent()) {
+            if (volume.stateIsDirtyOrInactive() && !snapshotData.isConsistent()) {
                 throw new IllegalArgumentException("Snapshot is marked as inconsistent although Volume is not active: " + snapshotFullName);
             }
 
@@ -381,7 +381,7 @@ public class ZfsDriver implements StorageDriver {
         for (VolumePO volume : volumes) {
             String snapshotFullName = volume + "@" + snapshotData.getName();
 
-            if (volume.isInactive()) {
+            if (volume.stateIsInactive()) {
                 log.warn("Taking Snapshot {} of inactive Volume...", snapshotFullName);
             } else {
                 log.info("Taking Snapshot {}...", snapshotFullName);
