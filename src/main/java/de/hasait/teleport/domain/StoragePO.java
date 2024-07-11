@@ -92,7 +92,6 @@ public class StoragePO implements IdAndVersion, HasStorage {
     @Column(name = "AVAIL_BYTES", nullable = false)
     private long availBytes;
 
-
     @OneToMany(mappedBy = "storage", cascade = CascadeType.ALL)
     @OrderBy("name ASC")
     private List<VolumePO> volumes = new ArrayList<>();

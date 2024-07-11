@@ -14,33 +14,25 @@
  * limitations under the License.
  */
 
-package de.hasait.common.util;
+package de.hasait.common.util.xml;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import java.util.Optional;
+public class XmlElements {
 
-public class XmlUtil {
+    private final NodeList nodeList;
 
-    private XmlUtil() {
-        super();
+    XmlElements(NodeList nodeList) {
+        this.nodeList = nodeList;
     }
 
-    public static Optional<Element> getFirstElement(Element element, String... tagNames) {
-        Element current = element;
-        for (String tagName : tagNames) {
-            NodeList nodeList = element.getElementsByTagName(tagName);
-            if (nodeList.getLength() == 0) {
-                return Optional.empty();
-            }
-            current = (Element) nodeList.item(0);
-        }
-        return Optional.of(current);
+    public int getLength() {
+        return nodeList.getLength();
     }
 
-    public static int getIntAttribute(Element element, String attributeName) {
-        return Integer.parseInt(element.getAttribute(attributeName));
+    public XmlElement element(int index) {
+        return new XmlElement((Element) nodeList.item(index));
     }
-
+    
 }

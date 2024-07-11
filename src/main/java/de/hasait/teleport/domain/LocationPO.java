@@ -31,6 +31,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "LOCATION")
@@ -101,6 +102,10 @@ public class LocationPO implements IdAndVersion, HasLocation {
 
     public List<HostPO> getHosts() {
         return hosts;
+    }
+
+    public Optional<NetworkPO> findNetworkByVlan(int vlan) {
+        return getNetworks().stream().filter(it -> it.getVlan() != null && vlan == it.getVlan()).findAny();
     }
 
     @Override

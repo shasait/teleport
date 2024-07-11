@@ -58,7 +58,7 @@ public class NetworkInterfacePO implements IdAndVersion {
     private String model;
 
     @Size(max = 17)
-    @Column(name = "MAC")
+    @Column(name = "MAC", nullable = false)
     private String mac;
 
     @Size(max = 15)
@@ -69,9 +69,25 @@ public class NetworkInterfacePO implements IdAndVersion {
     @Column(name = "IP_6")
     private String ipv6;
 
+    @Column(name = "TRUNK")
+    private boolean trunk;
+
     @ManyToOne
     @JoinColumn(name = "NETWORK_ID", nullable = false)
     private NetworkPO network;
+
+    public NetworkInterfacePO() {
+    }
+
+    public NetworkInterfacePO(VirtualMachinePO virtualMachine, String name, String model, String mac, NetworkPO network) {
+        this.virtualMachine = virtualMachine;
+        this.name = name;
+        this.model = model;
+        this.mac = mac;
+        this.network = network;
+
+        virtualMachine.getNetworkInterfaces().add(this);
+    }
 
     @Override
     public Long getId() {
@@ -138,6 +154,14 @@ public class NetworkInterfacePO implements IdAndVersion {
 
     public void setIpv6(String ipv6) {
         this.ipv6 = ipv6;
+    }
+
+    public boolean isTrunk() {
+        return trunk;
+    }
+
+    public void setTrunk(boolean trunk) {
+        this.trunk = trunk;
     }
 
     public NetworkPO getNetwork() {

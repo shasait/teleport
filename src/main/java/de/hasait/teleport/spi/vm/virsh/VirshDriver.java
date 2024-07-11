@@ -17,35 +17,30 @@
 package de.hasait.teleport.spi.vm.virsh;
 
 import com.google.gson.Gson;
-import de.hasait.common.util.XmlUtil;
 import de.hasait.common.util.cli.CliExecutor;
+import de.hasait.common.util.xml.XmlDocument;
+import de.hasait.common.util.xml.XmlElement;
+import de.hasait.common.util.xml.XmlElements;
 import de.hasait.teleport.CliConfig;
 import de.hasait.teleport.api.VirtualMachineCreateTO;
 import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.domain.NetworkInterfacePO;
+import de.hasait.teleport.domain.NetworkPO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -160,28 +155,14 @@ public class VirshDriver implements HypervisorDriver {
 
         String domainXml = VirshUtils.virshDumpXml(exe, name);
 
-        DocumentBuilder builder;
-        try {
-            builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        } catch (ParserConfigurationException e) {
-            throw new RuntimeException(e);
-        }
+        XmlDocument doc = new XmlDocument(domainXml);
 
-        Document doc;
-        try {
-            doc = builder.parse(new ByteArrayInputStream(domainXml.getBytes(StandardCharsets.UTF_8)));
-        } catch (SAXException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Element documentElement = doc.getDocumentElement();
-        String uuid = documentElement.getElementsByTagName("uuid").item(0).getTextContent();
+        XmlElement documentElement = doc.getDocumentElement();
+        String uuid = documentElement.getFirstElement("uuid").orElseThrow().getTextContent();
         virtualMachine.setUuid(uuid);
 
-        Element firstMemoryElement = XmlUtil.getFirstElement(documentElement, "memory").orElseThrow();
-        int memValue = Integer.parseInt(firstMemoryElement.getTextContent());
+        XmlElement firstMemoryElement = documentElement.getFirstElement("memory").orElseThrow();
+        int memValue = firstMemoryElement.getTextContentAsInt();
         String memUnit = firstMemoryElement.getAttribute("unit");
 
         int memMb;
@@ -192,26 +173,26 @@ public class VirshDriver implements HypervisorDriver {
         }
         virtualMachine.setMemMb(memMb);
 
-        virtualMachine.setMemHugePages(XmlUtil.getFirstElement(documentElement, "memoryBacking", "hugepages").isPresent());
+        virtualMachine.setMemHugePages(documentElement.getFirstElement("memoryBacking", "hugepages").isPresent());
 
-        int vcpu = Integer.parseInt(XmlUtil.getFirstElement(documentElement, "vcpu").orElseThrow().getTextContent());
+        int vcpu = documentElement.getFirstElement("vcpu").orElseThrow().getTextContentAsInt();
         virtualMachine.setCores(vcpu);
 
-        Element firstDevicesElement = XmlUtil.getFirstElement(documentElement, "devices").orElseThrow();
+        XmlElement firstDevicesElement = documentElement.getFirstElement("devices").orElseThrow();
 
-        Element firstVideoElement = XmlUtil.getFirstElement(firstDevicesElement, "video").orElseThrow();
-        Element firstVideoModelElement = XmlUtil.getFirstElement(firstVideoElement, "model").orElseThrow();
+        XmlElement firstVideoElement = firstDevicesElement.getFirstElement("video").orElseThrow();
+        XmlElement firstVideoModelElement = firstVideoElement.getFirstElement("model").orElseThrow();
 
-        int videoRam = XmlUtil.getIntAttribute(firstVideoModelElement, "ram");
+        int videoRam = firstVideoModelElement.getAttributeAsInt("ram");
         virtualMachine.setVgaMemKb(videoRam);
         virtualMachine.setVideoModel(firstVideoModelElement.getAttribute("type"));
 
         Set<VolumeAttachmentPO> volumeAttachments = new HashSet<>();
 
-        NodeList diskElements = firstDevicesElement.getElementsByTagName("disk");
+        XmlElements diskElements = firstDevicesElement.getElementsByTagName("disk");
         for (int i = 0; i < diskElements.getLength(); i++) {
-            Element diskElement = (Element) diskElements.item(i);
-            Element firstSourceElement = XmlUtil.getFirstElement(diskElement, "source").orElse(null);
+            XmlElement diskElement = diskElements.element(i);
+            XmlElement firstSourceElement = diskElement.getFirstElement("source").orElse(null);
             if (firstSourceElement == null) {
                 continue;
             }
@@ -221,7 +202,7 @@ public class VirshDriver implements HypervisorDriver {
             if (volumes.size() == 1) {
                 VolumePO volume = volumes.get(0);
 
-                Element firstTargetElement = (Element) diskElement.getElementsByTagName("target").item(0);
+                XmlElement firstTargetElement = diskElement.getFirstElement("target").orElseThrow();
                 String tdev = firstTargetElement.getAttribute("dev");
 
                 VolumeAttachmentPO existingVolumeAttachment = virtualMachine.findVolumeAttachmentByDev(tdev).orElse(null);
@@ -238,6 +219,46 @@ public class VirshDriver implements HypervisorDriver {
         }
 
         virtualMachine.getVolumeAttachments().retainAll(volumeAttachments);
+
+        Set<NetworkInterfacePO> networkInterfaces = new HashSet<>();
+
+        XmlElements interfaceElements = firstDevicesElement.getElementsByTagName("interface");
+        for (int i = 0; i < interfaceElements.getLength(); i++) {
+            String iname = "eth" + i;
+
+            XmlElement interfaceElement = interfaceElements.element(i);
+            if (!"ethernet".equals(interfaceElement.getAttribute("type"))) {
+                continue;
+            }
+
+            String modelType = interfaceElement.getFirstElement("model").orElseThrow().getAttribute("type");
+            String macAddress = interfaceElement.getFirstElement("mac").orElseThrow().getAttribute("address");
+            String scriptPath = interfaceElement.getFirstElement("script").orElseThrow().getAttribute("path");
+            int vlan = Integer.parseInt(StringUtils.substringBefore(StringUtils.substringAfterLast(scriptPath, "_"), "."));
+            boolean trunk = scriptPath.contains("vlan-trunk_");
+
+            NetworkPO network = virtualMachine.obtainLocation().findNetworkByVlan(vlan).orElse(null);
+            if (network == null) {
+                continue;
+            }
+
+            NetworkInterfacePO existingInterface = virtualMachine.findNetworkInterfaceByMac(macAddress).orElse(null);
+            NetworkInterfacePO networkInterface;
+            if (existingInterface != null) {
+                existingInterface.setName(iname);
+                existingInterface.setModel(modelType);
+                existingInterface.setNetwork(network);
+                networkInterface = existingInterface;
+            } else {
+                networkInterface = new NetworkInterfacePO(virtualMachine, iname, modelType, macAddress, network);
+            }
+
+            networkInterface.setTrunk(trunk);
+
+            networkInterfaces.add(networkInterface);
+        }
+
+        virtualMachine.getNetworkInterfaces().retainAll(networkInterfaces);
     }
 
 }

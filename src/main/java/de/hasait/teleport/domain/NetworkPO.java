@@ -17,17 +17,24 @@
 package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.IdAndVersion;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "NETWORK", uniqueConstraints = { //
@@ -70,6 +77,10 @@ public class NetworkPO implements IdAndVersion {
 
     @Column(name = "VLAN")
     private Integer vlan;
+
+    @OneToMany(mappedBy = "network", cascade = CascadeType.ALL)
+    @OrderBy("name ASC")
+    private List<NetworkInterfacePO> networkInterfaces = new ArrayList<>();
 
     @Override
     public Long getId() {
@@ -144,6 +155,14 @@ public class NetworkPO implements IdAndVersion {
 
     public void setVlan(Integer vlan) {
         this.vlan = vlan;
+    }
+
+    public List<NetworkInterfacePO> getNetworkInterfaces() {
+        return networkInterfaces;
+    }
+
+    public Optional<NetworkInterfacePO> findNetworkInterfaceByMac(String mac) {
+        return getNetworkInterfaces().stream().filter(it -> it.getMac().equals(mac)).findAny();
     }
 
 }

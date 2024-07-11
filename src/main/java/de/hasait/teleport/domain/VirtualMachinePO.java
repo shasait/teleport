@@ -236,6 +236,10 @@ public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
         return getVolumeAttachments().stream().filter(it -> it.getDev().equals(dev)).findAny();
     }
 
+    public Optional<NetworkInterfacePO> findNetworkInterfaceByMac(String mac) {
+        return getNetworkInterfaces().stream().filter(it -> it.getMac().equals(mac)).findAny();
+    }
+
     @Override
     public VirtualMachinePO obtainVirtualMachine() {
         return this;
