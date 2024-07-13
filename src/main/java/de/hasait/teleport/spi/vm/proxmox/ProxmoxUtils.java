@@ -55,6 +55,8 @@ public final class ProxmoxUtils {
     static VmState parseStatus(String s) {
         if ("running".equals(s)) {
             return VmState.RUNNING;
+        } else if ("stopped".equals(s)) {
+            return VmState.SHUTOFF;
         } else {
             // TODO add more
             return VmState.OTHER;
