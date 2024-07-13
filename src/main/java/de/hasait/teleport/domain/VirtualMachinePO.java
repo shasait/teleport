@@ -61,6 +61,10 @@ public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
     @Column(name = "NAME", nullable = false)
     private String name;
 
+    @Size(min = 1, max = 32)
+    @Column(name = "HVID")
+    private String hvid;
+
     @Size(max = 128)
     @Column(name = "DESCRIPTION")
     private String description;
@@ -150,6 +154,14 @@ public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getHvid() {
+        return hvid;
+    }
+
+    public void setHvid(String hvid) {
+        this.hvid = hvid;
     }
 
     public String getDescription() {

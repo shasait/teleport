@@ -14,25 +14,8 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.storage;
+package de.hasait.teleport.spi.vm.proxmox;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.domain.StoragePO;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-
-@Service
-public class StorageDriverService extends AbstractProviderService<StorageDriver> {
-
-    public StorageDriverService(StorageDriver[] providers) {
-        super(providers);
-    }
-
-    public void refresh(StoragePO storage) {
-        StorageDriver driver = getProviderByIdNotNull(storage.getDriver());
-        driver.refresh(storage);
-        storage.setLastSeen(LocalDateTime.now());
-    }
+public class ProxmoxDriverConfig {
 
 }

@@ -20,6 +20,8 @@ import de.hasait.common.service.AbstractProviderService;
 import de.hasait.teleport.domain.HypervisorPO;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 public class HypervisorDriverService extends AbstractProviderService<HypervisorDriver> {
 
@@ -30,6 +32,7 @@ public class HypervisorDriverService extends AbstractProviderService<HypervisorD
     public void refresh(HypervisorPO hypervisor) {
         HypervisorDriver driver = getProviderByIdNotNull(hypervisor.getDriver());
         driver.refresh(hypervisor);
+        hypervisor.setLastSeen(LocalDateTime.now());
     }
 
 }

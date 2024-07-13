@@ -41,7 +41,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -109,7 +108,6 @@ public class VirshDriver implements HypervisorDriver {
         VirshDriverConfig driverConfig = parseConfig(hypervisor);
         CliExecutor exe = cliConfig.createCliConnector(hypervisor);
         VirshUtils.virshListAll(exe).forEach(it -> processListEntry(hypervisor, driverConfig, exe, it));
-        hypervisor.setLastSeen(LocalDateTime.now());
     }
 
     @Override
@@ -188,6 +186,8 @@ public class VirshDriver implements HypervisorDriver {
         int videoRam = firstVideoModelElement.getAttributeAsInt("ram");
         virtualMachine.setVgaMemKb(videoRam);
         virtualMachine.setVideoModel(firstVideoModelElement.getAttribute("type"));
+
+        virtualMachineRepository.save(virtualMachine);
 
         Set<VolumeAttachmentPO> volumeAttachments = new HashSet<>();
 

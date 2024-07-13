@@ -152,13 +152,13 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
         return virtualMachines;
     }
 
+    public Optional<VirtualMachinePO> findVirtualMachineByName(String name) {
+        return getVirtualMachines().stream().filter(it -> it.getName().equals(name)).findAny();
+    }
+
     @Override
     public HypervisorPO obtainHypervisor() {
         return this;
-    }
-
-    public Optional<VirtualMachinePO> findVirtualMachineByName(String name) {
-        return getVirtualMachines().stream().filter(it -> it.getName().equals(name)).findAny();
     }
 
 }

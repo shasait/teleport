@@ -35,6 +35,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "HOST", uniqueConstraints = { //
@@ -130,6 +131,14 @@ public class HostPO implements IdAndVersion, HasHost {
 
     public List<HypervisorPO> getHypervisors() {
         return hypervisors;
+    }
+
+    public Optional<StoragePO> findStorageByName(String name) {
+        return getStorages().stream().filter(it -> it.getName().equals(name)).findAny();
+    }
+
+    public Optional<HypervisorPO> findHypervisorByName(String name) {
+        return getHypervisors().stream().filter(it -> it.getName().equals(name)).findAny();
     }
 
     @Override

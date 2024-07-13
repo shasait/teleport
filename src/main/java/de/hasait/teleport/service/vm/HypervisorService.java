@@ -41,7 +41,11 @@ public class HypervisorService {
     public void refreshAll() {
         List<HypervisorPO> hypervisors = repository.findAll();
         for (HypervisorPO hypervisor : hypervisors) {
-            driverService.refresh(hypervisor);
+            try {
+                driverService.refresh(hypervisor);
+            } catch (RuntimeException e) {
+                log.warn("Refresh failed for {}", hypervisor, e);
+            }
         }
     }
 

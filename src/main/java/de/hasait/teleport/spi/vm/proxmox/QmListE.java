@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.vm.virsh;
+package de.hasait.teleport.spi.vm.proxmox;
 
 
 import de.hasait.teleport.api.VmState;
@@ -25,32 +25,32 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class VirshListE {
+public class QmListE {
 
-    private static final Pattern LINE_PATTERN = Pattern.compile("\\s*(?<id>\\d+|-)\\s+(?<name>\\S+)\\s+(?<state>.+)");
+    private static final Pattern LINE_PATTERN = Pattern.compile("\\s*(?<id>\\d+|-)\\s+(?<name>\\S+)\\s+(?<status>.+?)\\s+.*");
 
     private final String id;
     private final String name;
-    private final String rawState;
+    private final String rawStatus;
     private final VmState state;
 
-    public static List<VirshListE> parse(List<String> lines) {
-        List<VirshListE> result = new ArrayList<>();
+    public static List<QmListE> parse(List<String> lines) {
+        List<QmListE> result = new ArrayList<>();
         for (String line : lines) {
             Matcher m = LINE_PATTERN.matcher(line);
             if (m.matches()) {
-                result.add(new VirshListE(m.group("id"), m.group("name"), m.group("state")));
+                result.add(new QmListE(m.group("id"), m.group("name"), m.group("status")));
             }
         }
 
         return result;
     }
 
-    public VirshListE(String id, String name, String rawState) {
+    public QmListE(String id, String name, String rawStatus) {
         this.id = id;
         this.name = name;
-        this.rawState = rawState;
-        this.state = VirshUtils.parseState(rawState);
+        this.rawStatus = rawStatus;
+        this.state = ProxmoxUtils.parseStatus(rawStatus);
     }
 
     public String getId() {

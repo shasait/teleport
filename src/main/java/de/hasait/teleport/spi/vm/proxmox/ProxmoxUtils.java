@@ -14,47 +14,51 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.vm.virsh;
+package de.hasait.teleport.spi.vm.proxmox;
 
 
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.teleport.api.VmState;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public final class VirshUtils {
+public final class ProxmoxUtils {
 
-    private VirshUtils() {
+    private ProxmoxUtils() {
         super();
     }
 
-    public static List<VirshListE> virshListAll(CliExecutor exe) {
-        List<String> command = List.of("virsh", "list", "--all");
+    public static List<QmListE> qmListFull(CliExecutor exe) {
+        List<String> command = List.of("qm", "list", "-full");
         List<String> lines = exe.executeAndWaitAndReturnStdoutLines(command, 1, TimeUnit.MINUTES, false);
-        return VirshListE.parse(lines);
+        return QmListE.parse(lines);
     }
 
-    public static VmState virshDomState(CliExecutor exe, String virtualMachineName) {
-        List<String> command = List.of("virsh", "domstate", virtualMachineName);
+    public static VmState qmStatus(CliExecutor exe, String vmid) {
+        List<String> command = List.of("qm", "status", vmid);
         List<String> lines = exe.executeAndWaitAndReturnStdoutLines(command, 10, TimeUnit.SECONDS, false);
-        return parseState(lines.get(0));
+        String line = lines.get(0);
+        return parseStatus(line.split(" ")[1]);
     }
 
-    public static String virshDumpXml(CliExecutor exe, String virtualMachineName) {
-        List<String> command = List.of("virsh", "dumpxml", virtualMachineName);
+    public static Map<String, String> qmConfig(CliExecutor exe, String vmid) {
+        List<String> command = List.of("qm", "config", vmid);
         List<String> lines = exe.executeAndWaitAndReturnStdoutLines(command, 10, TimeUnit.SECONDS, false);
-        return String.join("\n", lines);
+        Map<String, String> linesByKeyword = new LinkedHashMap<>();
+        lines.stream().map(line -> line.split(": ", 2)).forEach(it -> linesByKeyword.put(it[0], it[1]));
+        return linesByKeyword;
     }
 
-    static VmState parseState(String state) {
-        if (state.equals("running")) {
+    static VmState parseStatus(String s) {
+        if ("running".equals(s)) {
             return VmState.RUNNING;
+        } else {
+            // TODO add more
+            return VmState.OTHER;
         }
-        if (state.equals("shut off")) {
-            return VmState.SHUTOFF;
-        }
-        return VmState.OTHER;
     }
 
 }

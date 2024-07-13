@@ -41,7 +41,11 @@ public class StorageService {
     public void refreshAll() {
         List<StoragePO> storages = repository.findAll();
         for (StoragePO storage : storages) {
-            driverService.refresh(storage);
+            try {
+                driverService.refresh(storage);
+            } catch (RuntimeException e) {
+                log.warn("Refresh failed for {}", storage, e);
+            }
         }
     }
 

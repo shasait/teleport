@@ -40,6 +40,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -87,6 +88,9 @@ public class StoragePO implements IdAndVersion, HasStorage {
     @Column(name = "DRIVER_CONFIG")
     @TextAreaForStringPui
     private String driverConfig;
+
+    @Column(name = "LAST_SEEN")
+    private LocalDateTime lastSeen;
 
     @Min(0)
     @Column(name = "AVAIL_BYTES", nullable = false)
@@ -161,6 +165,14 @@ public class StoragePO implements IdAndVersion, HasStorage {
 
     public void setDriverConfig(String driverConfig) {
         this.driverConfig = driverConfig;
+    }
+
+    public LocalDateTime getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(LocalDateTime lastSeen) {
+        this.lastSeen = lastSeen;
     }
 
     public long getAvailBytes() {
