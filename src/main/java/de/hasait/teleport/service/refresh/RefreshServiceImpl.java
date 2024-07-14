@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.refresh;
 
 import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.service.vm.HypervisorService;

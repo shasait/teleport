@@ -17,12 +17,9 @@
 package de.hasait.teleport.service;
 
 import java.util.List;
-import java.util.concurrent.Future;
 
-public interface ActionService {
+public interface ActionContribution {
 
-    <R> Future<R> submit(Action<R> action);
-
-    List<Action<?>> determineActions();
-
+    void contributeActions(List<Action<?>> actionList);
+    
 }

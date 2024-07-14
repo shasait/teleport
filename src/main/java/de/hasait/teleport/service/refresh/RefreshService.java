@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.refresh;
 
-import java.util.List;
-import java.util.concurrent.Future;
+public interface RefreshService {
 
-public interface ActionService {
-
-    <R> Future<R> submit(Action<R> action);
-
-    List<Action<?>> determineActions();
+    void refresh();
 
 }

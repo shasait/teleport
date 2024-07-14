@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.refresh;
 
-import java.util.concurrent.Callable;
+import de.hasait.teleport.service.Action;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public abstract class Action<R> implements Callable<R> {
+public class RefreshAction extends Action<Void> {
 
-    private final String description;
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-    protected Action(String description) {
-        this.description = description;
-    }
+    private final RefreshService refreshService;
 
-    public String getDescription() {
-        return description;
+    public RefreshAction(RefreshService refreshService) {
+        super("Refresh state from drivers");
+        this.refreshService = refreshService;
     }
 
     @Override
-    public final String toString() {
-        return description;
+    public Void call() throws Exception {
+        try {
+            refreshService.refresh();
+        } catch (Throwable t) {
+            log.warn("Failed", t);
+        }
+        return null;
     }
 
 }

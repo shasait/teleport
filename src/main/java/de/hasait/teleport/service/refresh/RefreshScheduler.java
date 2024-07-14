@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.refresh;
 
+import de.hasait.teleport.service.ActionServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,27 +29,17 @@ public class RefreshScheduler {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ActionService actionService;
+    private final ActionServiceImpl actionService;
     private final RefreshService refreshService;
 
-    public RefreshScheduler(ActionService actionService, RefreshService refreshService) {
+    public RefreshScheduler(ActionServiceImpl actionService, RefreshService refreshService) {
         this.actionService = actionService;
         this.refreshService = refreshService;
     }
 
     @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
     public void scheduleFixedDelayTask() {
-        actionService.submit(new Action<Void>("Refresh") {
-            @Override
-            public Void call() throws Exception {
-                try {
-                    refreshService.refresh();
-                } catch (Throwable t) {
-                    log.warn("Failed", t);
-                }
-                return null;
-            }
-        });
+        actionService.submit(new RefreshAction(refreshService));
     }
 
 }

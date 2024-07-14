@@ -167,8 +167,8 @@ public class ProxmoxDriver implements HypervisorDriver {
         int memMb = Integer.parseInt(qmConfig.get("memory"));
         virtualMachine.setMemMb(memMb);
 
-        // TODO video
-        int vgaMemKb = 16 * 1024;
+        // default video
+        int vgaMemKb = 64 * 1024;
         virtualMachine.setVgaMemKb(vgaMemKb);
         String videoModel = "qxl";
         virtualMachine.setVideoModel(videoModel);

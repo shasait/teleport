@@ -14,10 +14,26 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.refresh;
 
-public interface RefreshService {
+import de.hasait.teleport.service.Action;
+import de.hasait.teleport.service.ActionContribution;
+import org.springframework.stereotype.Service;
 
-    void refresh();
+import java.util.List;
+
+@Service
+public class RefreshActionContribution implements ActionContribution {
+
+    private final RefreshService refreshService;
+
+    public RefreshActionContribution(RefreshService refreshService) {
+        this.refreshService = refreshService;
+    }
+
+    @Override
+    public void contributeActions(List<Action<?>> actionList) {
+        actionList.add(new RefreshAction(refreshService));
+    }
 
 }
