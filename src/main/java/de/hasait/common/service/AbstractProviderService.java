@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  *
  */
-public class AbstractProviderService<P extends Provider> {
+public class AbstractProviderService<P extends Provider> implements ProviderService<P> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractProviderService.class);
 
@@ -46,14 +46,17 @@ public class AbstractProviderService<P extends Provider> {
         }
     }
 
+    @Override
     public final List<String> findAllIds() {
         return providersById.keySet().stream().sorted().collect(Collectors.toList());
     }
 
+    @Override
     public final List<P> findAll() {
         return providersById.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).collect(Collectors.toList());
     }
 
+    @Override
     public final String validateProviderConfig(String providerId, String providerConfig) {
         try {
             P provider = getProviderByIdNotNull(providerId);

@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface VirtualMachineRepository extends SearchableRepository<VirtualMachinePO, Long> {
 
@@ -32,5 +34,12 @@ public interface VirtualMachineRepository extends SearchableRepository<VirtualMa
     @Override
     @Query("SELECT COUNT(r) FROM VirtualMachinePO r WHERE r.name LIKE %:search% OR r.description LIKE %:search%")
     long searchCount(String search);
+
+    @Query("""
+            SELECT srcVm, tgtHost.name FROM VirtualMachinePO srcVm, HostPO tgtHost
+            WHERE srcVm.hypervisor.host != tgtHost
+            AND NOT EXISTS(SELECT 1 FROM VirtualMachinePO tgtVm WHERE srcVm.name = tgtVm.name AND tgtVm.hypervisor.host = tgtHost)
+            """)
+    List<Object[]> findFullSyncVms();
 
 }

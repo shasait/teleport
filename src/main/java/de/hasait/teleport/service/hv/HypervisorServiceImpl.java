@@ -16,38 +16,66 @@
 
 package de.hasait.teleport.service.hv;
 
+import de.hasait.common.service.AbstractProviderService;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.HypervisorRepository;
-import de.hasait.teleport.spi.vm.HypervisorDriverService;
+import de.hasait.teleport.domain.VirtualMachinePO;
+import de.hasait.teleport.spi.vm.HypervisorDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class HypervisorServiceImpl implements HypervisorService {
+public class HypervisorServiceImpl extends AbstractProviderService<HypervisorDriver> implements HypervisorService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final HypervisorRepository repository;
-    private final HypervisorDriverService driverService;
 
-    public HypervisorServiceImpl(HypervisorRepository repository, HypervisorDriverService driverService) {
+    public HypervisorServiceImpl(HypervisorRepository repository, HypervisorDriver[] drivers) {
+        super(drivers);
+
         this.repository = repository;
-        this.driverService = driverService;
     }
 
     @Override
+    @Transactional
     public void refreshAll() {
         List<HypervisorPO> hypervisors = repository.findAll();
         for (HypervisorPO hypervisor : hypervisors) {
             try {
-                driverService.refresh(hypervisor);
+                refresh(hypervisor);
             } catch (RuntimeException e) {
                 log.warn("Refresh failed for {}", hypervisor, e);
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public void refresh(HypervisorPO hypervisor) {
+        HypervisorDriver driver = getProviderByIdNotNull(hypervisor.getDriver());
+        driver.refresh(hypervisor);
+        hypervisor.setLastSeen(LocalDateTime.now());
+    }
+
+    @Override
+    @Transactional
+    public void fullSyncVmToOtherHv(String srcHostName, String srcHvName, String srcVmName, String tgtHostName) {
+        HypervisorPO srcHv = repository.findByHostAndName(srcHostName, srcHvName).orElseThrow();
+        VirtualMachinePO srcVm = srcHv.findVirtualMachineByName(srcVmName).orElseThrow();
+
+        HypervisorPO tgtHv = repository.findByHostAndName(tgtHostName, srcHvName).orElseThrow();
+        VirtualMachinePO existingTgtVm = tgtHv.findVirtualMachineByName(srcVmName).orElse(null);
+        if (existingTgtVm != null) {
+            throw new IllegalArgumentException("Target VM already exists");
+        }
+
+        // TODO
     }
 
 }

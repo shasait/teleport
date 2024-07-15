@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.vm;
+package de.hasait.common.service;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.domain.HypervisorPO;
-import org.springframework.stereotype.Service;
+import java.util.List;
 
-import java.time.LocalDateTime;
+public interface ProviderService<P extends Provider> {
 
-@Service
-public class HypervisorDriverService extends AbstractProviderService<HypervisorDriver> {
+    List<String> findAllIds();
 
-    public HypervisorDriverService(HypervisorDriver[] providers) {
-        super(providers);
-    }
+    List<P> findAll();
 
-    public void refresh(HypervisorPO hypervisor) {
-        HypervisorDriver driver = getProviderByIdNotNull(hypervisor.getDriver());
-        driver.refresh(hypervisor);
-        hypervisor.setLastSeen(LocalDateTime.now());
-    }
+    String validateProviderConfig(String providerId, String providerConfig);
 
 }

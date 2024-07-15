@@ -27,7 +27,7 @@ import de.hasait.common.ui.CrudForm;
 import de.hasait.common.ui.MainLayout;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.StorageRepository;
-import de.hasait.teleport.spi.storage.StorageDriverService;
+import de.hasait.teleport.service.storage.StorageService;
 import jakarta.annotation.security.PermitAll;
 
 /**
@@ -39,12 +39,12 @@ import jakarta.annotation.security.PermitAll;
 @UIScope
 public class StorageGridView extends AbstractCrudGrid<StoragePO, StorageRepository> {
 
-    private final StorageDriverService storageDriverService;
+    private final StorageService storageService;
 
-    public StorageGridView(StorageDriverService storageDriverService, StorageRepository repository, BeanUiPopulator populator) {
+    public StorageGridView(StorageService storageService, StorageRepository repository, BeanUiPopulator populator) {
         super(StoragePO.class, repository, 2, populator);
 
-        this.storageDriverService = storageDriverService;
+        this.storageService = storageService;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class StorageGridView extends AbstractCrudGrid<StoragePO, StorageReposito
         super.customizeCrudForm(crudForm);
 
         crudForm.getBinder().withValidator((po, valueContext) -> {
-            String failureReason = storageDriverService.validateProviderConfig(po.getDriver(), po.getDriverConfig());
+            String failureReason = storageService.validateProviderConfig(po.getDriver(), po.getDriverConfig());
             if (failureReason != null) {
                 return ValidationResult.error(failureReason);
             }

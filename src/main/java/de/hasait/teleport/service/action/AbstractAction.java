@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.storage;
+package de.hasait.teleport.service.action;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.domain.StoragePO;
-import org.springframework.stereotype.Service;
+public abstract class AbstractAction<R> implements Action<R> {
 
-import java.time.LocalDateTime;
+    private final String description;
 
-@Service
-public class StorageDriverService extends AbstractProviderService<StorageDriver> {
-
-    public StorageDriverService(StorageDriver[] providers) {
-        super(providers);
+    protected AbstractAction(String description) {
+        this.description = description;
     }
 
-    public void refresh(StoragePO storage) {
-        StorageDriver driver = getProviderByIdNotNull(storage.getDriver());
-        driver.refresh(storage);
-        storage.setLastSeen(LocalDateTime.now());
+    @Override
+    public final String getDescription() {
+        return description;
+    }
+
+    @Override
+    public final String toString() {
+        return description;
     }
 
 }

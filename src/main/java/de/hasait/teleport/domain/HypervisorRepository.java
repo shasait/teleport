@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface HypervisorRepository extends SearchableRepository<HypervisorPO, Long> {
 
@@ -32,5 +34,8 @@ public interface HypervisorRepository extends SearchableRepository<HypervisorPO,
     @Override
     @Query("SELECT COUNT(r) FROM HypervisorPO r WHERE r.name LIKE %:search% OR r.description LIKE %:search%")
     long searchCount(String search);
+
+    @Query("SELECT hv FROM HypervisorPO hv WHERE hv.name = :name AND hv.host.name = :host")
+    Optional<HypervisorPO> findByHostAndName(String host, String name);
 
 }

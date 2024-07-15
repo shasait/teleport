@@ -19,8 +19,8 @@ package de.hasait.common.ui.puif;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.data.binder.Binder;
-import de.hasait.common.service.AbstractProviderService;
 import de.hasait.common.service.Provider;
+import de.hasait.common.service.ProviderService;
 import de.hasait.common.util.ReflectionUtil;
 
 import java.beans.PropertyDescriptor;
@@ -30,9 +30,9 @@ public abstract class AbstractProviderPuiFactory<P extends Provider, C> extends 
 
     private final Class<P> providerClass;
 
-    private final AbstractProviderService<P> providerService;
+    private final ProviderService<P> providerService;
 
-    public AbstractProviderPuiFactory(Class<P> providerClass, Supplier<C> contextFactory, AbstractProviderService<P> providerService) {
+    public AbstractProviderPuiFactory(Class<P> providerClass, Supplier<C> contextFactory, ProviderService<P> providerService) {
         super(String.class, 0, contextFactory);
 
         this.providerClass = providerClass;

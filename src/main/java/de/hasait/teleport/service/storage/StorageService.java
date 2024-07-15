@@ -16,6 +16,14 @@
 
 package de.hasait.teleport.service.storage;
 
-public interface StorageService {
+import de.hasait.common.service.ProviderService;
+import de.hasait.teleport.domain.StoragePO;
+import de.hasait.teleport.spi.storage.StorageDriver;
+
+public interface StorageService extends ProviderService<StorageDriver> {
+
+    void refresh(StoragePO storage);
+
     void refreshAll();
+
 }

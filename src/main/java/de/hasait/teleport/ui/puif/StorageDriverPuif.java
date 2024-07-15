@@ -17,15 +17,15 @@
 package de.hasait.teleport.ui.puif;
 
 import de.hasait.common.ui.puif.AbstractProviderPuiFactory;
+import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.spi.storage.StorageDriver;
-import de.hasait.teleport.spi.storage.StorageDriverService;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StorageDriverPuif extends AbstractProviderPuiFactory<StorageDriver, Void> {
 
-    public StorageDriverPuif(StorageDriverService providerService) {
-        super(StorageDriver.class, () -> null, providerService);
+    public StorageDriverPuif(StorageService storageService) {
+        super(StorageDriver.class, () -> null, storageService);
     }
 
 }

@@ -61,7 +61,7 @@ public class ActionsGridView extends AbstractGridView<Action<?>> {
         add(queueGrid);
 
         Grid.Column<ActionFutureTask<?>> queueGridRunningColumn = queueGrid.addColumn(ActionFutureTask::isRunning);
-        beanGridDescriptionColumn.setHeader("Running");
+        queueGridRunningColumn.setHeader("Running");
         Grid.Column<ActionFutureTask<?>> queueGridDescriptionColumn = queueGrid.addColumn(t -> t.getAction().getDescription());
         queueGridDescriptionColumn.setHeader("Description");
 

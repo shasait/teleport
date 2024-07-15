@@ -16,6 +16,16 @@
 
 package de.hasait.teleport.service.hv;
 
-public interface HypervisorService {
+import de.hasait.common.service.ProviderService;
+import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.spi.vm.HypervisorDriver;
+
+public interface HypervisorService extends ProviderService<HypervisorDriver> {
+
+    void refresh(HypervisorPO hypervisor);
+
     void refreshAll();
+
+    void fullSyncVmToOtherHv(String srcHostName, String srcHvName, String srcVmName, String tgtHostName);
+
 }

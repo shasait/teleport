@@ -18,21 +18,8 @@ package de.hasait.teleport.service.action;
 
 import java.util.concurrent.Callable;
 
-public abstract class Action<R> implements Callable<R> {
+public interface Action<R> extends Callable<R> {
 
-    private final String description;
-
-    protected Action(String description) {
-        this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    @Override
-    public final String toString() {
-        return description;
-    }
+    String getDescription();
 
 }

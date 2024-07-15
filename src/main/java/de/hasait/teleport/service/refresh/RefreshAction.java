@@ -16,13 +16,9 @@
 
 package de.hasait.teleport.service.refresh;
 
-import de.hasait.teleport.service.action.Action;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.hasait.teleport.service.action.AbstractAction;
 
-public class RefreshAction extends Action<Void> {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
+public class RefreshAction extends AbstractAction<Void> {
 
     private final RefreshService refreshService;
 
@@ -33,11 +29,7 @@ public class RefreshAction extends Action<Void> {
 
     @Override
     public Void call() throws Exception {
-        try {
-            refreshService.refresh();
-        } catch (Throwable t) {
-            log.warn("Failed", t);
-        }
+        refreshService.refresh();
         return null;
     }
 

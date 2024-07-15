@@ -16,39 +16,50 @@
 
 package de.hasait.teleport.service.storage;
 
+import de.hasait.common.service.AbstractProviderService;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.StorageRepository;
-import de.hasait.teleport.spi.storage.StorageDriverService;
+import de.hasait.teleport.spi.storage.StorageDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class StorageServiceImpl implements StorageService {
+public class StorageServiceImpl extends AbstractProviderService<StorageDriver> implements StorageService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final StorageRepository repository;
-    private final StorageDriverService driverService;
 
-    public StorageServiceImpl(StorageRepository repository, StorageDriverService driverService) {
+    public StorageServiceImpl(StorageRepository repository, StorageDriver[] drivers) {
+        super(drivers);
+
         this.repository = repository;
-        this.driverService = driverService;
     }
 
     @Override
+    @Transactional
     public void refreshAll() {
         List<StoragePO> storages = repository.findAll();
         for (StoragePO storage : storages) {
             try {
-                driverService.refresh(storage);
+                refresh(storage);
             } catch (RuntimeException e) {
                 log.warn("Refresh failed for {}", storage, e);
             }
         }
     }
 
+    @Override
+    @Transactional
+    public void refresh(StoragePO storage) {
+        StorageDriver driver = getProviderByIdNotNull(storage.getDriver());
+        driver.refresh(storage);
+        storage.setLastSeen(LocalDateTime.now());
+    }
 
 }
