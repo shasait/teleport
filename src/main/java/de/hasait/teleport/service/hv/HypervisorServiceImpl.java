@@ -17,6 +17,7 @@
 package de.hasait.teleport.service.hv;
 
 import de.hasait.common.service.AbstractProviderService;
+import de.hasait.teleport.api.VirtualMachineCreateTO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.HypervisorRepository;
 import de.hasait.teleport.domain.VirtualMachinePO;
@@ -75,7 +76,21 @@ public class HypervisorServiceImpl extends AbstractProviderService<HypervisorDri
             throw new IllegalArgumentException("Target VM already exists");
         }
 
-        // TODO
+        HypervisorDriver tgtHvDriver = getProviderByIdNotNull(tgtHv.getDriver());
+
+        VirtualMachineCreateTO vmConfig = new VirtualMachineCreateTO();
+        vmConfig.setName(srcVm.getName());
+        vmConfig.setDescription(srcVm.getDescription());
+        vmConfig.setCores(srcVm.getCores());
+        vmConfig.setMemMb(srcVm.getMemMb());
+        vmConfig.setMemHugePages(srcVm.isMemHugePages());
+        vmConfig.setVideoModel(srcVm.getVideoModel());
+        vmConfig.setVgaMemKb(srcVm.getVgaMemKb());
+        // TODO complete TO structure: volumes, networkInterfaces
+        tgtHvDriver.create(tgtHv, vmConfig, false);
+
+        VirtualMachinePO tgtVm = tgtHv.findVirtualMachineByName(srcVmName).orElseThrow();
+        // TODO submit actions for volume syncing
     }
 
 }

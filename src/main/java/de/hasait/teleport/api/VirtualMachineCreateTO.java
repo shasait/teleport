@@ -22,6 +22,18 @@ public class VirtualMachineCreateTO implements Serializable {
 
     private String name;
 
+    private String description;
+
+    private int cores;
+
+    private int memMb;
+
+    private boolean memHugePages;
+
+    private String videoModel;
+
+    private int vgaMemKb;
+
     public String getName() {
         return name;
     }
@@ -30,6 +42,52 @@ public class VirtualMachineCreateTO implements Serializable {
         this.name = name;
     }
 
-    // TODO incomplete
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public int getCores() {
+        return cores;
+    }
+
+    public void setCores(int cores) {
+        this.cores = cores;
+    }
+
+    public int getMemMb() {
+        return memMb;
+    }
+
+    public void setMemMb(int memMb) {
+        this.memMb = memMb;
+    }
+
+    public boolean isMemHugePages() {
+        return memHugePages;
+    }
+
+    public void setMemHugePages(boolean memHugePages) {
+        this.memHugePages = memHugePages;
+    }
+
+    public String getVideoModel() {
+        return videoModel;
+    }
+
+    public void setVideoModel(String videoModel) {
+        this.videoModel = videoModel;
+    }
+
+    public int getVgaMemKb() {
+        return vgaMemKb;
+    }
+
+    public void setVgaMemKb(int vgaMemKb) {
+        this.vgaMemKb = vgaMemKb;
+    }
 
 }
