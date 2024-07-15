@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.service.refresh;
 
-import de.hasait.teleport.service.Action;
+import de.hasait.teleport.service.action.Action;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

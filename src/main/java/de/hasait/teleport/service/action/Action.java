@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.refresh;
+package de.hasait.teleport.service.action;
 
-import de.hasait.teleport.service.action.Action;
-import de.hasait.teleport.service.action.ActionContribution;
-import org.springframework.stereotype.Service;
+import java.util.concurrent.Callable;
 
-import java.util.List;
+public abstract class Action<R> implements Callable<R> {
 
-@Service
-public class RefreshActionContribution implements ActionContribution {
+    private final String description;
 
-    private final RefreshService refreshService;
+    protected Action(String description) {
+        this.description = description;
+    }
 
-    public RefreshActionContribution(RefreshService refreshService) {
-        this.refreshService = refreshService;
+    public String getDescription() {
+        return description;
     }
 
     @Override
-    public void contributeActions(List<Action<?>> actionList) {
-        actionList.add(new RefreshAction(refreshService));
+    public final String toString() {
+        return description;
     }
 
 }

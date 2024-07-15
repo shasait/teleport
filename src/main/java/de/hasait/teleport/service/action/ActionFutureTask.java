@@ -14,12 +14,33 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.action;
 
-import java.util.List;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public interface ActionContribution {
+public class ActionFutureTask<R> extends FutureTask<R> {
 
-    void contributeActions(List<Action<?>> actionList);
-    
+    private final Action<R> action;
+
+    private final AtomicBoolean running = new AtomicBoolean();
+
+    public ActionFutureTask(Action<R> action) {
+        super(action);
+
+        this.action = action;
+    }
+
+    public Action<R> getAction() {
+        return action;
+    }
+
+    public boolean isRunning() {
+        return running.get();
+    }
+
+    void setRunning(boolean running) {
+        this.running.set(running);
+    }
+
 }

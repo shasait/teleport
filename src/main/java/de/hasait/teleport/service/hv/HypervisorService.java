@@ -14,25 +14,8 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.service.hv;
 
-import java.util.concurrent.Callable;
-
-public abstract class Action<R> implements Callable<R> {
-
-    private final String description;
-
-    protected Action(String description) {
-        this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    @Override
-    public final String toString() {
-        return description;
-    }
-
+public interface HypervisorService {
+    void refreshAll();
 }

@@ -28,7 +28,7 @@ import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
-import de.hasait.teleport.service.Action;
+import de.hasait.teleport.service.action.Action;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -52,7 +52,7 @@ public class TeleportMainLayoutCustomizer implements MainLayoutCustomizer {
         VaadinUtil.addDataViewRouterLink(verticalLayout, VirtualMachinePO.class, "grid", VirtualMachineGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, VolumeAttachmentPO.class, "grid", VolumeAttachmentGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, NetworkInterfacePO.class, "grid", NetworkInterfaceGridView.class);
-        VaadinUtil.addDataViewRouterLink(verticalLayout, Action.class, "grid", ActionGridView.class);
+        VaadinUtil.addDataViewRouterLink(verticalLayout, Action.class, "grid", ActionsGridView.class);
     }
 
 }

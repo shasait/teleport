@@ -16,38 +16,6 @@
 
 package de.hasait.teleport.service.storage;
 
-import de.hasait.teleport.domain.StoragePO;
-import de.hasait.teleport.domain.StorageRepository;
-import de.hasait.teleport.spi.storage.StorageDriverService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class StorageService {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final StorageRepository repository;
-    private final StorageDriverService driverService;
-
-    public StorageService(StorageRepository repository, StorageDriverService driverService) {
-        this.repository = repository;
-        this.driverService = driverService;
-    }
-
-    public void refreshAll() {
-        List<StoragePO> storages = repository.findAll();
-        for (StoragePO storage : storages) {
-            try {
-                driverService.refresh(storage);
-            } catch (RuntimeException e) {
-                log.warn("Refresh failed for {}", storage, e);
-            }
-        }
-    }
-
-
+public interface StorageService {
+    void refreshAll();
 }

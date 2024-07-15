@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.vm;
+package de.hasait.teleport.service.storage;
 
-import de.hasait.teleport.domain.HypervisorPO;
-import de.hasait.teleport.domain.HypervisorRepository;
-import de.hasait.teleport.spi.vm.HypervisorDriverService;
+import de.hasait.teleport.domain.StoragePO;
+import de.hasait.teleport.domain.StorageRepository;
+import de.hasait.teleport.spi.storage.StorageDriverService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,27 +26,29 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class HypervisorService {
+public class StorageServiceImpl implements StorageService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final HypervisorRepository repository;
-    private final HypervisorDriverService driverService;
+    private final StorageRepository repository;
+    private final StorageDriverService driverService;
 
-    public HypervisorService(HypervisorRepository repository, HypervisorDriverService driverService) {
+    public StorageServiceImpl(StorageRepository repository, StorageDriverService driverService) {
         this.repository = repository;
         this.driverService = driverService;
     }
 
+    @Override
     public void refreshAll() {
-        List<HypervisorPO> hypervisors = repository.findAll();
-        for (HypervisorPO hypervisor : hypervisors) {
+        List<StoragePO> storages = repository.findAll();
+        for (StoragePO storage : storages) {
             try {
-                driverService.refresh(hypervisor);
+                driverService.refresh(storage);
             } catch (RuntimeException e) {
-                log.warn("Refresh failed for {}", hypervisor, e);
+                log.warn("Refresh failed for {}", storage, e);
             }
         }
     }
+
 
 }

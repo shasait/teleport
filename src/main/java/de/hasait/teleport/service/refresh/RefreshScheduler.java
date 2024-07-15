@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.service.refresh;
 
-import de.hasait.teleport.service.ActionServiceImpl;
+import de.hasait.teleport.service.action.ActionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,10 +29,10 @@ public class RefreshScheduler {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ActionServiceImpl actionService;
+    private final ActionService actionService;
     private final RefreshService refreshService;
 
-    public RefreshScheduler(ActionServiceImpl actionService, RefreshService refreshService) {
+    public RefreshScheduler(ActionService actionService, RefreshService refreshService) {
         this.actionService = actionService;
         this.refreshService = refreshService;
     }
