@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.DriverInstancePO;
 import de.hasait.common.ui.puif.ProvderPui;
 import de.hasait.common.ui.puif.StringSetPui;
 import de.hasait.common.ui.puif.TextAreaForStringPui;
@@ -51,7 +51,7 @@ import java.util.Set;
 @Table(name = "STORAGE", uniqueConstraints = { //
         @UniqueConstraint(name = "UC_ST_HOST_NAME", columnNames = {"HOST_ID", "NAME"}) //
 })
-public class StoragePO implements IdAndVersion, HasStorage {
+public class StoragePO implements DriverInstancePO, HasStorage {
 
     @Id
     @GeneratedValue
@@ -89,8 +89,8 @@ public class StoragePO implements IdAndVersion, HasStorage {
     @TextAreaForStringPui
     private String driverConfig;
 
-    @Column(name = "LAST_SEEN")
-    private LocalDateTime lastSeen;
+    @Column(name = "LAST_REFRESH")
+    private LocalDateTime lastRefresh;
 
     @Min(0)
     @Column(name = "AVAIL_BYTES", nullable = false)
@@ -167,12 +167,13 @@ public class StoragePO implements IdAndVersion, HasStorage {
         this.driverConfig = driverConfig;
     }
 
-    public LocalDateTime getLastSeen() {
-        return lastSeen;
+    public LocalDateTime getLastRefresh() {
+        return lastRefresh;
     }
 
-    public void setLastSeen(LocalDateTime lastSeen) {
-        this.lastSeen = lastSeen;
+    @Override
+    public void setLastRefresh(LocalDateTime lastRefresh) {
+        this.lastRefresh = lastRefresh;
     }
 
     public long getAvailBytes() {

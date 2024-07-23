@@ -19,7 +19,7 @@ package de.hasait.common.ui;
 
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.selection.SelectionEvent;
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import de.hasait.common.domain.SearchableRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 /**
  *
  */
-public abstract class AbstractCrudGrid<PO extends IdAndVersion, R extends SearchableRepository<PO, Long>> extends AbstractGridView<PO> {
+public abstract class AbstractCrudGrid<PO extends PersistantObject, R extends SearchableRepository<PO, Long>> extends AbstractGridView<PO> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCrudGrid.class);
 
@@ -49,9 +49,9 @@ public abstract class AbstractCrudGrid<PO extends IdAndVersion, R extends Search
 
         populator.populateGrid(poClass, beanGrid);
 
-        Grid.Column<PO> idColumn = beanGrid.addColumn(IdAndVersion::getId);
+        Grid.Column<PO> idColumn = beanGrid.addColumn(PersistantObject::getId);
         idColumn.setHeader("Id");
-        Grid.Column<PO> versionColumn = beanGrid.addColumn(IdAndVersion::getVersion);
+        Grid.Column<PO> versionColumn = beanGrid.addColumn(PersistantObject::getVersion);
         versionColumn.setHeader("Version");
 
         customizeCrudGrid(beanGrid);

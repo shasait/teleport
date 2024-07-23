@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,7 +34,7 @@ import jakarta.validation.constraints.Size;
         @UniqueConstraint(name = "UC_NI_VM_NAME", columnNames = {"VM_ID", "NAME"}), //
         @UniqueConstraint(name = "UC_NI_VM_ID", columnNames = {"VM_ID", "NETWORK_ID"}) //
 })
-public class NetworkInterfacePO implements IdAndVersion {
+public class NetworkInterfacePO implements PersistantObject {
 
     @Id
     @GeneratedValue

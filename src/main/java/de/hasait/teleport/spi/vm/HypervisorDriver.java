@@ -16,16 +16,14 @@
 
 package de.hasait.teleport.spi.vm;
 
-import de.hasait.common.service.Provider;
-import de.hasait.teleport.api.VirtualMachineCreateTO;
+import de.hasait.common.service.RefreshableDriver;
+import de.hasait.teleport.api.VmCreateTO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 
-public interface HypervisorDriver extends Provider {
+public interface HypervisorDriver extends RefreshableDriver<HypervisorPO> {
 
-    void refresh(HypervisorPO hypervisor);
-
-    void create(HypervisorPO hypervisor, VirtualMachineCreateTO config, boolean runInstallation);
+    void create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation);
 
     void start(VirtualMachinePO virtualMachine);
 

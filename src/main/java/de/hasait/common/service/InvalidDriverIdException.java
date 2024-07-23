@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package de.hasait.common.domain;
+package de.hasait.common.service;
 
-public interface IdAndVersion {
+public class InvalidDriverIdException extends RuntimeException {
 
-    Long getId();
-
-    long getVersion();
-
-    void setVersion(long version);
+    public InvalidDriverIdException(String message) {
+        super(message);
+    }
 
 }

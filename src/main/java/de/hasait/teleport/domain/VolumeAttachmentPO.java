@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,7 +34,7 @@ import jakarta.validation.constraints.Size;
         @UniqueConstraint(name = "UC_VA_VM_DEV", columnNames = {"VM_ID", "DEV"}), //
         @UniqueConstraint(name = "UC_VA_VM_VOL", columnNames = {"VM_ID", "VOLUME_ID"}) //
 })
-public class VolumeAttachmentPO implements IdAndVersion, HasVirtualMachine, HasVolume {
+public class VolumeAttachmentPO implements PersistantObject, HasVirtualMachine, HasVolume {
 
     @Id
     @GeneratedValue

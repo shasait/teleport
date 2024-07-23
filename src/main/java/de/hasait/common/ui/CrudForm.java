@@ -29,7 +29,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BinderValidationStatus;
 import com.vaadin.flow.data.binder.StatusChangeEvent;
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import de.hasait.common.domain.SearchableRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  *
  */
-public final class CrudForm<PO extends IdAndVersion, R extends SearchableRepository<PO, Long>> extends FormLayout {
+public final class CrudForm<PO extends PersistantObject, R extends SearchableRepository<PO, Long>> extends FormLayout {
 
     private static final Logger LOG = LoggerFactory.getLogger(CrudForm.class);
 

@@ -16,7 +16,7 @@
 
 package de.hasait.common.ui.puif;
 
-import de.hasait.common.service.Provider;
+import de.hasait.common.service.Driver;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -24,6 +24,6 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ProvderPui {
 
-    Class<? extends Provider> provider();
+    Class<? extends Driver> provider();
 
 }

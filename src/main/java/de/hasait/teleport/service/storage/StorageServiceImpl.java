@@ -16,50 +16,17 @@
 
 package de.hasait.teleport.service.storage;
 
-import de.hasait.common.service.AbstractProviderService;
+import de.hasait.common.service.AbstractRefreshableDriverService;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.StorageRepository;
 import de.hasait.teleport.spi.storage.StorageDriver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
-public class StorageServiceImpl extends AbstractProviderService<StorageDriver> implements StorageService {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final StorageRepository repository;
+public class StorageServiceImpl extends AbstractRefreshableDriverService<StorageDriver, StoragePO, StorageRepository> implements StorageService {
 
     public StorageServiceImpl(StorageRepository repository, StorageDriver[] drivers) {
-        super(drivers);
-
-        this.repository = repository;
-    }
-
-    @Override
-    @Transactional
-    public void refreshAll() {
-        List<StoragePO> storages = repository.findAll();
-        for (StoragePO storage : storages) {
-            try {
-                refresh(storage);
-            } catch (RuntimeException e) {
-                log.warn("Refresh failed for {}", storage, e);
-            }
-        }
-    }
-
-    @Override
-    @Transactional
-    public void refresh(StoragePO storage) {
-        StorageDriver driver = getProviderByIdNotNull(storage.getDriver());
-        driver.refresh(storage);
-        storage.setLastSeen(LocalDateTime.now());
+        super(StoragePO.class, repository, drivers);
     }
 
 }

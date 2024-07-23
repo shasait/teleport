@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,7 +40,7 @@ import java.util.Optional;
 @Table(name = "NETWORK", uniqueConstraints = { //
         @UniqueConstraint(name = "UC_NW_L_NAME", columnNames = {"LOCATION_ID", "NAME"}) //
 })
-public class NetworkPO implements IdAndVersion {
+public class NetworkPO implements PersistantObject {
 
     @Id
     @GeneratedValue

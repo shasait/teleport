@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import de.hasait.teleport.api.VmState;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -43,7 +43,7 @@ import java.util.Optional;
         @UniqueConstraint(name = "UC_VM_HV_NAME", columnNames = {"HYPERVISOR_ID", "NAME"}), //
         @UniqueConstraint(name = "UC_VM_HV_UUID", columnNames = {"HYPERVISOR_ID", "UUID"}) //
 })
-public class VirtualMachinePO implements IdAndVersion, HasVirtualMachine {
+public class VirtualMachinePO implements PersistantObject, HasVirtualMachine {
 
     @Id
     @GeneratedValue

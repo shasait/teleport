@@ -17,8 +17,10 @@
 package de.hasait.teleport.api;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-public class VirtualMachineCreateTO implements Serializable {
+public class VmCreateTO implements Serializable {
 
     private String name;
 
@@ -33,6 +35,10 @@ public class VirtualMachineCreateTO implements Serializable {
     private String videoModel;
 
     private int vgaMemKb;
+
+    private final List<VmCreateVolumeTO> volumes = new ArrayList<>();
+
+    private final List<VmCreateNetIfTO> networkInterfaces = new ArrayList<>();
 
     public String getName() {
         return name;
@@ -88,6 +94,14 @@ public class VirtualMachineCreateTO implements Serializable {
 
     public void setVgaMemKb(int vgaMemKb) {
         this.vgaMemKb = vgaMemKb;
+    }
+
+    public List<VmCreateVolumeTO> getVolumes() {
+        return volumes;
+    }
+
+    public List<VmCreateNetIfTO> getNetworkInterfaces() {
+        return networkInterfaces;
     }
 
 }

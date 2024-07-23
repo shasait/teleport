@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import de.hasait.common.ui.puif.TextAreaForStringPui;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -32,7 +32,7 @@ import jakarta.validation.constraints.Size;
 @Table(name = "HOST_CONN_CONFIG", uniqueConstraints = { //
         @UniqueConstraint(name = "UC_HCC_FROM_TO", columnNames = {"FROM_NAME", "TO_NAME"}) //
 })
-public class HostConnectConfigPO implements IdAndVersion {
+public class HostConnectConfigPO implements PersistantObject {
 
     @Id
     @GeneratedValue

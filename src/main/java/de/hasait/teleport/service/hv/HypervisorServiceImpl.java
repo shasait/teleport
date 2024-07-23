@@ -16,52 +16,24 @@
 
 package de.hasait.teleport.service.hv;
 
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.teleport.api.VirtualMachineCreateTO;
+import de.hasait.common.service.AbstractRefreshableDriverService;
+import de.hasait.teleport.api.VmCreateNetIfTO;
+import de.hasait.teleport.api.VmCreateTO;
+import de.hasait.teleport.api.VmCreateVolumeTO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.HypervisorRepository;
+import de.hasait.teleport.domain.NetworkInterfacePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
+import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Service
-public class HypervisorServiceImpl extends AbstractProviderService<HypervisorDriver> implements HypervisorService {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final HypervisorRepository repository;
+public class HypervisorServiceImpl extends AbstractRefreshableDriverService<HypervisorDriver, HypervisorPO, HypervisorRepository> implements HypervisorService {
 
     public HypervisorServiceImpl(HypervisorRepository repository, HypervisorDriver[] drivers) {
-        super(drivers);
-
-        this.repository = repository;
-    }
-
-    @Override
-    @Transactional
-    public void refreshAll() {
-        List<HypervisorPO> hypervisors = repository.findAll();
-        for (HypervisorPO hypervisor : hypervisors) {
-            try {
-                refresh(hypervisor);
-            } catch (RuntimeException e) {
-                log.warn("Refresh failed for {}", hypervisor, e);
-            }
-        }
-    }
-
-    @Override
-    @Transactional
-    public void refresh(HypervisorPO hypervisor) {
-        HypervisorDriver driver = getProviderByIdNotNull(hypervisor.getDriver());
-        driver.refresh(hypervisor);
-        hypervisor.setLastSeen(LocalDateTime.now());
+        super(HypervisorPO.class, repository, drivers);
     }
 
     @Override
@@ -78,19 +50,43 @@ public class HypervisorServiceImpl extends AbstractProviderService<HypervisorDri
 
         HypervisorDriver tgtHvDriver = getProviderByIdNotNull(tgtHv.getDriver());
 
-        VirtualMachineCreateTO vmConfig = new VirtualMachineCreateTO();
-        vmConfig.setName(srcVm.getName());
-        vmConfig.setDescription(srcVm.getDescription());
-        vmConfig.setCores(srcVm.getCores());
-        vmConfig.setMemMb(srcVm.getMemMb());
-        vmConfig.setMemHugePages(srcVm.isMemHugePages());
-        vmConfig.setVideoModel(srcVm.getVideoModel());
-        vmConfig.setVgaMemKb(srcVm.getVgaMemKb());
-        // TODO complete TO structure: volumes, networkInterfaces
-        tgtHvDriver.create(tgtHv, vmConfig, false);
+        VmCreateTO vmCreateTO = mapToVmCreateTO(srcVm);
+
+        tgtHvDriver.create(tgtHv, vmCreateTO, false);
 
         VirtualMachinePO tgtVm = tgtHv.findVirtualMachineByName(srcVmName).orElseThrow();
         // TODO submit actions for volume syncing
+    }
+
+    private VmCreateTO mapToVmCreateTO(VirtualMachinePO srcVm) {
+        VmCreateTO vmCreateTO = new VmCreateTO();
+        vmCreateTO.setName(srcVm.getName());
+        vmCreateTO.setDescription(srcVm.getDescription());
+        vmCreateTO.setCores(srcVm.getCores());
+        vmCreateTO.setMemMb(srcVm.getMemMb());
+        vmCreateTO.setMemHugePages(srcVm.isMemHugePages());
+        vmCreateTO.setVideoModel(srcVm.getVideoModel());
+        vmCreateTO.setVgaMemKb(srcVm.getVgaMemKb());
+
+        for (VolumeAttachmentPO volumeAttachment : srcVm.getVolumeAttachments()) {
+            VmCreateVolumeTO volumeTO = new VmCreateVolumeTO();
+            volumeTO.setDev(volumeAttachment.getDev());
+            volumeTO.setName(volumeAttachment.getVolume().getName());
+            volumeTO.setSizeBytes(volumeAttachment.getVolume().getSizeBytes());
+            vmCreateTO.getVolumes().add(volumeTO);
+        }
+        for (NetworkInterfacePO networkInterface : srcVm.getNetworkInterfaces()) {
+            VmCreateNetIfTO netIfTO = new VmCreateNetIfTO();
+            netIfTO.setModel(networkInterface.getModel());
+            netIfTO.setName(networkInterface.getName());
+            netIfTO.setMac(networkInterface.getMac());
+            netIfTO.setIpv4(networkInterface.getIpv4());
+            netIfTO.setIpv6(networkInterface.getIpv6());
+            netIfTO.setVlan(networkInterface.getNetwork().getVlan());
+            vmCreateTO.getNetworkInterfaces().add(netIfTO);
+        }
+
+        return vmCreateTO;
     }
 
 }

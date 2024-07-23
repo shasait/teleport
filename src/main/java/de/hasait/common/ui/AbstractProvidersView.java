@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 by Sebastian Hasait (sebastian at hasait dot de)
+ * Copyright (C) 2024 by Sebastian Hasait (sebastian at hasait dot de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package de.hasait.common.ui;
 
 
 import com.vaadin.flow.component.grid.Grid;
-import de.hasait.common.service.AbstractProviderService;
-import de.hasait.common.service.Provider;
+import de.hasait.common.service.AbstractDriverService;
+import de.hasait.common.service.Driver;
 
 /**
  *
  */
-public class AbstractProvidersView<P extends Provider, S extends AbstractProviderService<P>> extends AbstractGridView<P> {
+public class AbstractProvidersView<P extends Driver, S extends AbstractDriverService<P>> extends AbstractGridView<P> {
 
     private final S providerService;
 
@@ -33,13 +33,13 @@ public class AbstractProvidersView<P extends Provider, S extends AbstractProvide
 
         this.providerService = providerService;
 
-        Grid.Column<P> providerIdColumn = beanGrid.addColumn(Provider::getId);
+        Grid.Column<P> providerIdColumn = beanGrid.addColumn(Driver::getId);
         providerIdColumn.setHeader("Provider");
 
-        Grid.Column<P> descriptionColumn = beanGrid.addColumn(Provider::getDescription);
+        Grid.Column<P> descriptionColumn = beanGrid.addColumn(Driver::getDescription);
         descriptionColumn.setHeader("Description");
 
-        Grid.Column<P> disabledReasonColumn = beanGrid.addColumn(Provider::getDisabledReason);
+        Grid.Column<P> disabledReasonColumn = beanGrid.addColumn(Driver::getDisabledReason);
         disabledReasonColumn.setHeader("Disabled Reason");
     }
 

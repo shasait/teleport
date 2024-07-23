@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -32,7 +32,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "VOLUME_SNAPSHOT")
-public final class VolumeSnapshotPO implements IdAndVersion, HasVolume {
+public final class VolumeSnapshotPO implements PersistantObject, HasVolume {
 
     @Id
     @GeneratedValue

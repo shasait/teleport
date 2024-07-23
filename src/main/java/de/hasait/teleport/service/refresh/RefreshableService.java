@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.hv;
+package de.hasait.teleport.service.refresh;
 
-import de.hasait.common.service.DriverService;
-import de.hasait.teleport.domain.HypervisorPO;
-import de.hasait.teleport.service.refresh.RefreshableService;
-import de.hasait.teleport.spi.vm.HypervisorDriver;
+public interface RefreshableService<T> {
 
-public interface HypervisorService extends RefreshableService<HypervisorPO>, DriverService<HypervisorDriver> {
+    Class<T> getSupportedRefreshType();
 
-    void fullSyncVmToOtherHv(String srcHostName, String srcHvName, String srcVmName, String tgtHostName);
+    void refresh(T object);
+
+    void refreshAll();
 
 }

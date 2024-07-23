@@ -17,6 +17,7 @@
 package de.hasait.teleport.spi.storage.zfs;
 
 import com.google.gson.Gson;
+import de.hasait.common.service.AbstractRefreshableDriver;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.common.util.cli.InheritPIOStrategy;
 import de.hasait.common.util.cli.WriteBytesPIOStrategy;
@@ -38,8 +39,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -54,60 +53,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-public class ZfsDriver implements StorageDriver {
-
-    public static final String DRIVER_ID = "zfs";
-
-    private static ZfsDriverConfig parseConfig(String config) {
-        ZfsDriverConfig driverConfig = new Gson().fromJson(config, ZfsDriverConfig.class);
-        String dataset = driverConfig.getDataset();
-        ZfsUtils.validateZfsDataset(dataset);
-        return driverConfig;
-    }
-
-    public static String determineZfsDataset(StoragePO storage) {
-        if (DRIVER_ID.equals(storage.getDriver())) {
-            ZfsDriverConfig driverConfig = parseConfig(storage.getDriverConfig());
-            return driverConfig.getDataset();
-        }
-        throw new IllegalArgumentException("Not a ZFS storage: " + storage);
-    }
-
-    public static String determineZfsVolume(VolumePO volume) {
-        return determineZfsVolume(volume.getStorage(), volume.getName());
-    }
-
-    public static String determineZfsVolume(StoragePO storage, String volumeName) {
-        return determineZfsDataset(storage) + "/" + volumeName;
-    }
-
-    public static String determineZfsObject(HasStorage hasStorage) {
-        if (hasStorage instanceof StoragePO storage) {
-            return determineZfsDataset(storage);
-        }
-        if (hasStorage instanceof VolumePO volume) {
-            return determineZfsVolume(volume);
-        }
-        if (hasStorage instanceof VolumeSnapshotPO snapshot) {
-            return determineZfsVolume(snapshot.getVolume()) + "@" + snapshot.getData().getName();
-        }
-        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
-    }
-
-    public static String determineZfsObject(HasStorage hasStorage, SnapshotData snapshotData) {
-        if (hasStorage instanceof VolumePO) {
-            return determineZfsObject(hasStorage) + "@" + snapshotData.getName();
-        }
-        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
-    }
-
-    public static String determineZfsDevice(StoragePO storage, String volumeName) {
-        return "/dev/zvol/" + determineZfsVolume(storage, volumeName);
-    }
-
-    public static String determineZfsDevice(VolumePO volume) {
-        return "/dev/zvol/" + determineZfsVolume(volume);
-    }
+public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverConfig> implements StorageDriver {
 
     private static final String VOLUME_REGEX = "(?<v>[^@]+)";
     private static final String VOLUME_SNAPSHOT_REGEX = VOLUME_REGEX + "@(?<vs>[^/]+)";
@@ -159,44 +105,24 @@ public class ZfsDriver implements StorageDriver {
     private final VolumeSnapshotRepository volumeSnapshotRepository;
 
     public ZfsDriver(@Autowired CliConfig cliConfig, VolumeRepository volumeRepository, VolumeSnapshotRepository volumeSnapshotRepository) {
+        super("zfs", "ZFS Storage Driver", null);
+
         this.cliConfig = cliConfig;
         this.volumeRepository = volumeRepository;
         this.volumeSnapshotRepository = volumeSnapshotRepository;
     }
 
     @Override
-    @Nonnull
-    public String getId() {
-        return DRIVER_ID;
-    }
-
-    @Nonnull
-    @Override
-    public String getDescription() {
-        return "ZFS Storage Driver";
-    }
-
-    @Nullable
-    @Override
-    public String getDisabledReason() {
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public String validateConfig(@Nullable String config) {
-        try {
-            parseConfig(config);
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-        return null;
+    protected ZfsDriverConfig parseConfigText(String configText) {
+        ZfsDriverConfig config = new Gson().fromJson(configText, ZfsDriverConfig.class);
+        String dataset = config.getDataset();
+        ZfsUtils.validateZfsDataset(dataset);
+        return config;
     }
 
     @Override
-    public void refresh(StoragePO storage) {
-        refresh(storage, determineZfsDataset(storage));
-        // TODO remove objects not found during refresh
+    protected void refresh(StoragePO po, ZfsDriverConfig config) {
+        refresh(po, config.getDataset());
     }
 
     @Override
@@ -639,6 +565,46 @@ public class ZfsDriver implements StorageDriver {
         if (!dryMode) {
             refreshVolume(volume);
         }
+    }
+
+    private String determineZfsDataset(StoragePO storage) {
+        return parseConfigText(storage).getDataset();
+    }
+
+    private String determineZfsVolume(VolumePO volume) {
+        return determineZfsVolume(volume.getStorage(), volume.getName());
+    }
+
+    private String determineZfsVolume(StoragePO storage, String volumeName) {
+        return determineZfsDataset(storage) + "/" + volumeName;
+    }
+
+    private String determineZfsObject(HasStorage hasStorage) {
+        if (hasStorage instanceof StoragePO storage) {
+            return determineZfsDataset(storage);
+        }
+        if (hasStorage instanceof VolumePO volume) {
+            return determineZfsVolume(volume);
+        }
+        if (hasStorage instanceof VolumeSnapshotPO snapshot) {
+            return determineZfsVolume(snapshot.getVolume()) + "@" + snapshot.getData().getName();
+        }
+        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
+    }
+
+    private String determineZfsObject(HasStorage hasStorage, SnapshotData snapshotData) {
+        if (hasStorage instanceof VolumePO) {
+            return determineZfsObject(hasStorage) + "@" + snapshotData.getName();
+        }
+        throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
+    }
+
+    private String determineZfsDevice(StoragePO storage, String volumeName) {
+        return "/dev/zvol/" + determineZfsVolume(storage, volumeName);
+    }
+
+    private String determineZfsDevice(VolumePO volume) {
+        return "/dev/zvol/" + determineZfsVolume(volume);
     }
 
 }

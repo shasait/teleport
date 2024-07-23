@@ -17,12 +17,13 @@
 package de.hasait.teleport.spi.vm.virsh;
 
 import com.google.gson.Gson;
+import de.hasait.common.service.AbstractRefreshableDriver;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.common.util.xml.XmlDocument;
 import de.hasait.common.util.xml.XmlElement;
 import de.hasait.common.util.xml.XmlElements;
 import de.hasait.teleport.CliConfig;
-import de.hasait.teleport.api.VirtualMachineCreateTO;
+import de.hasait.teleport.api.VmCreateTO;
 import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.NetworkInterfacePO;
@@ -39,28 +40,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
-public class VirshDriver implements HypervisorDriver {
-
-    public static final String DRIVER_ID = "virsh";
-
-    private static VirshDriverConfig parseConfig(String config) {
-        VirshDriverConfig driverConfig = new Gson().fromJson(config, VirshDriverConfig.class);
-        return driverConfig;
-    }
-
-    private static VirshDriverConfig parseConfig(HypervisorPO hypervisor) {
-        if (DRIVER_ID.equals(hypervisor.getDriver())) {
-            return parseConfig(hypervisor.getDriverConfig());
-        }
-        throw new IllegalArgumentException("Not a virsh hypervisor: " + hypervisor);
-    }
+public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDriverConfig> implements HypervisorDriver {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -69,49 +54,26 @@ public class VirshDriver implements HypervisorDriver {
     private final VirtualMachineRepository virtualMachineRepository;
 
     public VirshDriver(@Autowired CliConfig cliConfig, VolumeRepository volumeRepository, VirtualMachineRepository virtualMachineRepository) {
+        super("virsh", "Virsh Hypervisor Driver", null);
+
         this.cliConfig = cliConfig;
         this.volumeRepository = volumeRepository;
         this.virtualMachineRepository = virtualMachineRepository;
     }
 
     @Override
-    @Nonnull
-    public String getId() {
-        return DRIVER_ID;
-    }
-
-    @Nonnull
-    @Override
-    public String getDescription() {
-        return "Virsh Hypervisor Driver";
-    }
-
-    @Nullable
-    @Override
-    public String getDisabledReason() {
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public String validateConfig(@Nullable String config) {
-        try {
-            parseConfig(config);
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-        return null;
+    protected VirshDriverConfig parseConfigText(String configText) {
+        return new Gson().fromJson(configText, VirshDriverConfig.class);
     }
 
     @Override
-    public void refresh(HypervisorPO hypervisor) {
-        VirshDriverConfig driverConfig = parseConfig(hypervisor);
-        CliExecutor exe = cliConfig.createCliConnector(hypervisor);
-        VirshUtils.virshListAll(exe).forEach(it -> processListEntry(hypervisor, driverConfig, exe, it));
+    protected void refresh(HypervisorPO po, VirshDriverConfig config) {
+        CliExecutor exe = cliConfig.createCliConnector(po);
+        VirshUtils.virshListAll(exe).forEach(it -> processListEntry(po, config, exe, it));
     }
 
     @Override
-    public void create(HypervisorPO hypervisor, VirtualMachineCreateTO config, boolean runInstallation) {
+    public void create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
 
     }
 
@@ -140,7 +102,7 @@ public class VirshDriver implements HypervisorDriver {
 
     }
 
-    private void processListEntry(HypervisorPO hypervisor, VirshDriverConfig driverConfig, CliExecutor exe, VirshListE entry) {
+    private void processListEntry(HypervisorPO hypervisor, VirshDriverConfig config, CliExecutor exe, VirshListE entry) {
         String name = entry.getName();
         VmState state = entry.getState();
 

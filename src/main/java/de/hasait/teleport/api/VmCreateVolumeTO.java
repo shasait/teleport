@@ -14,16 +14,40 @@
  * limitations under the License.
  */
 
-package de.hasait.common.service;
+package de.hasait.teleport.api;
 
-import java.util.List;
+import java.io.Serializable;
 
-public interface ProviderService<P extends Provider> {
+public class VmCreateVolumeTO implements Serializable {
 
-    List<String> findAllIds();
+    private String dev;
 
-    List<P> findAll();
+    private String name;
 
-    String validateProviderConfig(String providerId, String providerConfig);
+    private Long sizeBytes;
+
+    public String getDev() {
+        return dev;
+    }
+
+    public void setDev(String dev) {
+        this.dev = dev;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Long getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public void setSizeBytes(Long sizeBytes) {
+        this.sizeBytes = sizeBytes;
+    }
 
 }

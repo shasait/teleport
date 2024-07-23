@@ -21,7 +21,7 @@ import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.provider.QuerySortOrder;
 import com.vaadin.flow.data.provider.SortDirection;
 import de.hasait.common.domain.SearchableRepository;
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -29,7 +29,7 @@ import org.springframework.data.domain.Sort;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class JpaRepositoryDataProvider<PO extends IdAndVersion, R extends SearchableRepository<PO, ?>> extends AbstractBackEndDataProvider<PO, String> {
+public class JpaRepositoryDataProvider<PO extends PersistantObject, R extends SearchableRepository<PO, ?>> extends AbstractBackEndDataProvider<PO, String> {
 
     private final R repository;
 

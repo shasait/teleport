@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,7 +35,7 @@ import java.util.Optional;
 
 @Entity
 @Table(name = "LOCATION")
-public class LocationPO implements IdAndVersion, HasLocation {
+public class LocationPO implements PersistantObject, HasLocation {
 
     @Id
     @GeneratedValue

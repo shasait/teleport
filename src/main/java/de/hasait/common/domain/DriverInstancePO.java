@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package de.hasait.common.service;
+package de.hasait.common.domain;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import java.time.LocalDateTime;
 
-public interface Provider {
+public interface DriverInstancePO extends PersistantObject {
 
-    @Nonnull
-    String getId();
+    String getDriver();
 
-    @Nonnull
-    String getDescription();
+    String getDriverConfig();
 
-    @Nullable
-    String getDisabledReason();
-
-    @Nullable
-    String validateConfig(@Nullable String config);
+    void setLastRefresh(LocalDateTime localDateTime);
 
 }

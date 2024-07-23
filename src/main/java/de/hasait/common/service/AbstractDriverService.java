@@ -28,13 +28,13 @@ import java.util.stream.Collectors;
 /**
  *
  */
-public class AbstractProviderService<P extends Provider> implements ProviderService<P> {
+public class AbstractDriverService<P extends Driver> implements DriverService<P> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractProviderService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDriverService.class);
 
     private final Map<String, P> providersById = new HashMap<>();
 
-    public AbstractProviderService(P[] providers) {
+    public AbstractDriverService(P[] providers) {
         super();
 
         for (P provider : providers) {
@@ -60,12 +60,12 @@ public class AbstractProviderService<P extends Provider> implements ProviderServ
     public final String validateProviderConfig(String providerId, String providerConfig) {
         try {
             P provider = getProviderByIdNotNull(providerId);
-            String errorMessage = provider.validateConfig(providerConfig);
+            String errorMessage = provider.validateConfigText(providerConfig);
             if (errorMessage != null) {
                 return "Invalid providerConfig: " + errorMessage;
             }
             return null;
-        } catch (InvalidProviderIdException e) {
+        } catch (InvalidDriverIdException e) {
             return "Provider not found: " + providerId;
         } catch (RuntimeException e) {
             LOG.debug("validateProviderConfig: providerId={}, providerConfig={}", providerId, providerConfig, e);
@@ -77,7 +77,7 @@ public class AbstractProviderService<P extends Provider> implements ProviderServ
     protected final P getProviderByIdNotNull(String providerId) {
         P provider = providersById.get(providerId);
         if (provider == null) {
-            throw new InvalidProviderIdException(providerId);
+            throw new InvalidDriverIdException(providerId);
         }
         return provider;
     }

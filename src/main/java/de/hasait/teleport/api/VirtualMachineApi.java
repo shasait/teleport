@@ -24,11 +24,11 @@ public interface VirtualMachineApi {
 
     // Create
 
-    List<HypervisorReferenceTO> canCreateVm(VirtualMachineCreateTO virtualMachineCreateTO);
+    List<HypervisorReferenceTO> canCreateVm(VmCreateTO vmCreateTO);
 
-    CanResult canCreateVm(HypervisorReferenceTO hypervisorReferenceTO, VirtualMachineCreateTO virtualMachineCreateTO);
+    CanResult canCreateVm(HypervisorReferenceTO hypervisorReferenceTO, VmCreateTO vmCreateTO);
 
-    boolean createVm(HypervisorReferenceTO hypervisorReferenceTO, VirtualMachineCreateTO virtualMachineCreateTO);
+    boolean createVm(HypervisorReferenceTO hypervisorReferenceTO, VmCreateTO vmCreateTO);
 
     // State
 

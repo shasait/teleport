@@ -19,24 +19,24 @@ package de.hasait.common.ui.puif;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.data.binder.Binder;
-import de.hasait.common.service.Provider;
-import de.hasait.common.service.ProviderService;
+import de.hasait.common.service.Driver;
+import de.hasait.common.service.DriverService;
 import de.hasait.common.util.ReflectionUtil;
 
 import java.beans.PropertyDescriptor;
 import java.util.function.Supplier;
 
-public abstract class AbstractProviderPuiFactory<P extends Provider, C> extends AbstractPuiFactory<String, String, ComboBox<String>, C> {
+public abstract class AbstractProviderPuiFactory<P extends Driver, C> extends AbstractPuiFactory<String, String, ComboBox<String>, C> {
 
     private final Class<P> providerClass;
 
-    private final ProviderService<P> providerService;
+    private final DriverService<P> driverService;
 
-    public AbstractProviderPuiFactory(Class<P> providerClass, Supplier<C> contextFactory, ProviderService<P> providerService) {
+    public AbstractProviderPuiFactory(Class<P> providerClass, Supplier<C> contextFactory, DriverService<P> driverService) {
         super(String.class, 0, contextFactory);
 
         this.providerClass = providerClass;
-        this.providerService = providerService;
+        this.driverService = driverService;
     }
 
     @Override
@@ -53,7 +53,7 @@ public abstract class AbstractProviderPuiFactory<P extends Provider, C> extends 
     @Override
     protected ComboBox<String> createAndAddField(FormLayout formLayout, String caption, C context) {
         ComboBox<String> field = new ComboBox<>(caption);
-        field.setItems(providerService.findAllIds());
+        field.setItems(driverService.findAllIds());
         formLayout.add(field, 1);
         return field;
     }

@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import de.hasait.teleport.api.VolumeState;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -41,7 +41,7 @@ import java.util.Optional;
 @Table(name = "VOLUME", uniqueConstraints = { //
         @UniqueConstraint(name = "UC_V_VG_NAME", columnNames = {"STORAGE_ID", "NAME"}) //
 })
-public final class VolumePO implements IdAndVersion, HasVolume {
+public final class VolumePO implements PersistantObject, HasVolume {
 
     @Id
     @GeneratedValue

@@ -22,7 +22,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public interface SearchableRepository<PO extends IdAndVersion, ID> extends JpaRepository<PO, ID> {
+public interface SearchableRepository<PO extends PersistantObject, ID> extends JpaRepository<PO, ID> {
 
     Page<PO> search(String search, Pageable pageable);
 

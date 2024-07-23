@@ -20,7 +20,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.binder.Binder;
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.PersistantObject;
 import de.hasait.common.domain.SearchableRepository;
 import de.hasait.common.ui.JpaRepositoryDataProvider;
 
@@ -28,7 +28,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 
-public abstract class AbstractToOnePuiFactory<PO extends IdAndVersion, R extends SearchableRepository<PO, ?>, C> extends AbstractPuiFactory<PO, PO, ComboBox<PO>, C> {
+public abstract class AbstractToOnePuiFactory<PO extends PersistantObject, R extends SearchableRepository<PO, ?>, C> extends AbstractPuiFactory<PO, PO, ComboBox<PO>, C> {
 
     private final R repository;
 

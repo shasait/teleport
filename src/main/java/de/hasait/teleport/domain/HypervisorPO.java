@@ -16,7 +16,7 @@
 
 package de.hasait.teleport.domain;
 
-import de.hasait.common.domain.IdAndVersion;
+import de.hasait.common.domain.DriverInstancePO;
 import de.hasait.common.ui.puif.TextAreaForStringPui;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -42,7 +42,7 @@ import java.util.Optional;
 @Table(name = "HYPERVISOR", uniqueConstraints = { //
         @UniqueConstraint(name = "UC_HV_HOST_NAME", columnNames = {"HOST_ID", "NAME"}) //
 })
-public class HypervisorPO implements IdAndVersion, HasHypervisor {
+public class HypervisorPO implements DriverInstancePO, HasHypervisor {
 
     @Id
     @GeneratedValue
@@ -74,8 +74,8 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
     @TextAreaForStringPui
     private String driverConfig;
 
-    @Column(name = "LAST_SEEN")
-    private LocalDateTime lastSeen;
+    @Column(name = "LAST_REFRESH")
+    private LocalDateTime lastRefresh;
 
     @OneToMany(mappedBy = "hypervisor", cascade = CascadeType.ALL)
     @OrderBy("name ASC")
@@ -124,6 +124,7 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
         this.description = description;
     }
 
+    @Override
     public String getDriver() {
         return driver;
     }
@@ -140,12 +141,13 @@ public class HypervisorPO implements IdAndVersion, HasHypervisor {
         this.driverConfig = driverConfig;
     }
 
-    public LocalDateTime getLastSeen() {
-        return lastSeen;
+    public LocalDateTime getLastRefresh() {
+        return lastRefresh;
     }
 
-    public void setLastSeen(LocalDateTime lastSeen) {
-        this.lastSeen = lastSeen;
+    @Override
+    public void setLastRefresh(LocalDateTime lastRefresh) {
+        this.lastRefresh = lastRefresh;
     }
 
     public List<VirtualMachinePO> getVirtualMachines() {

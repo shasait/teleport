@@ -17,9 +17,10 @@
 package de.hasait.teleport.spi.vm.proxmox;
 
 import com.google.gson.Gson;
+import de.hasait.common.service.AbstractRefreshableDriver;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.teleport.CliConfig;
-import de.hasait.teleport.api.VirtualMachineCreateTO;
+import de.hasait.teleport.api.VmCreateTO;
 import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.StoragePO;
@@ -34,29 +35,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 @Service
-public class ProxmoxDriver implements HypervisorDriver {
-
-    public static final String DRIVER_ID = "proxmox";
-
-    private static ProxmoxDriverConfig parseConfig(String config) {
-        ProxmoxDriverConfig driverConfig = new Gson().fromJson(config, ProxmoxDriverConfig.class);
-        return driverConfig;
-    }
-
-    private static ProxmoxDriverConfig parseConfig(HypervisorPO hypervisor) {
-        if (DRIVER_ID.equals(hypervisor.getDriver())) {
-            return parseConfig(hypervisor.getDriverConfig());
-        }
-        throw new IllegalArgumentException("Not a proxmox hypervisor: " + hypervisor);
-    }
+public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, ProxmoxDriverConfig> implements HypervisorDriver {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -65,50 +49,26 @@ public class ProxmoxDriver implements HypervisorDriver {
     private final VirtualMachineRepository virtualMachineRepository;
 
     public ProxmoxDriver(@Autowired CliConfig cliConfig, VolumeRepository volumeRepository, VirtualMachineRepository virtualMachineRepository) {
+        super("proxmox", "Proxmox Hypervisor Driver", null);
+
         this.cliConfig = cliConfig;
         this.volumeRepository = volumeRepository;
         this.virtualMachineRepository = virtualMachineRepository;
     }
 
     @Override
-    @Nonnull
-    public String getId() {
-        return DRIVER_ID;
-    }
-
-    @Nonnull
-    @Override
-    public String getDescription() {
-        return "Virsh Hypervisor Driver";
-    }
-
-    @Nullable
-    @Override
-    public String getDisabledReason() {
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public String validateConfig(@Nullable String config) {
-        try {
-            parseConfig(config);
-        } catch (Exception e) {
-            return e.getMessage();
-        }
-        return null;
+    protected ProxmoxDriverConfig parseConfigText(String configText) {
+        return new Gson().fromJson(configText, ProxmoxDriverConfig.class);
     }
 
     @Override
-    public void refresh(HypervisorPO hypervisor) {
-        ProxmoxDriverConfig driverConfig = parseConfig(hypervisor);
-        CliExecutor exe = cliConfig.createCliConnector(hypervisor);
-        ProxmoxUtils.qmListFull(exe).forEach(it -> processListEntry(hypervisor, driverConfig, exe, it));
-        hypervisor.setLastSeen(LocalDateTime.now());
+    protected void refresh(HypervisorPO po, ProxmoxDriverConfig config) {
+        CliExecutor exe = cliConfig.createCliConnector(po);
+        ProxmoxUtils.qmListFull(exe).forEach(it -> processListEntry(po, config, exe, it));
     }
 
     @Override
-    public void create(HypervisorPO hypervisor, VirtualMachineCreateTO config, boolean runInstallation) {
+    public void create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
 
     }
 
@@ -137,7 +97,7 @@ public class ProxmoxDriver implements HypervisorDriver {
 
     }
 
-    private void processListEntry(HypervisorPO hypervisor, ProxmoxDriverConfig driverConfig, CliExecutor exe, QmListE entry) {
+    private void processListEntry(HypervisorPO hypervisor, ProxmoxDriverConfig config, CliExecutor exe, QmListE entry) {
         String name = entry.getName();
         VmState state = entry.getState();
 
