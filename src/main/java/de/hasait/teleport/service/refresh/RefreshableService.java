@@ -24,4 +24,8 @@ public interface RefreshableService<T> {
 
     void refreshAll();
 
+    default int refreshPriority() {
+        return 0;
+    }
+
 }

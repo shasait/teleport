@@ -27,7 +27,6 @@ import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class HypervisorServiceImpl extends AbstractRefreshableDriverService<HypervisorDriver, HypervisorPO, HypervisorRepository> implements HypervisorService {
@@ -37,7 +36,6 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
     }
 
     @Override
-    @Transactional
     public void fullSyncVmToOtherHv(String srcHostName, String srcHvName, String srcVmName, String tgtHostName) {
         HypervisorPO srcHv = repository.findByHostAndName(srcHostName, srcHvName).orElseThrow();
         VirtualMachinePO srcVm = srcHv.findVirtualMachineByName(srcVmName).orElseThrow();

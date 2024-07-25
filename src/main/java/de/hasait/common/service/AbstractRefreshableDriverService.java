@@ -21,7 +21,6 @@ import de.hasait.teleport.service.refresh.RefreshableService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +45,6 @@ public class AbstractRefreshableDriverService<P extends RefreshableDriver<PO>, P
     }
 
     @Override
-    @Transactional
     public final void refreshAll() {
         List<PO> poList = repository.findAll();
         for (PO po : poList) {
@@ -59,7 +57,6 @@ public class AbstractRefreshableDriverService<P extends RefreshableDriver<PO>, P
     }
 
     @Override
-    @Transactional
     public final void refresh(PO po) {
         P provider = getProviderByIdNotNull(po.getDriver());
         provider.refresh(po);

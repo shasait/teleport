@@ -17,6 +17,7 @@
 package de.hasait.teleport.service.refresh;
 
 import de.hasait.teleport.service.action.AbstractAction;
+import org.springframework.transaction.TransactionStatus;
 
 public class RefreshAction extends AbstractAction<Void> {
 
@@ -28,7 +29,7 @@ public class RefreshAction extends AbstractAction<Void> {
     }
 
     @Override
-    public Void call() throws Exception {
+    public Void doInTransaction(TransactionStatus status) {
         refreshService.refresh();
         return null;
     }

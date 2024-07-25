@@ -16,9 +16,9 @@
 
 package de.hasait.teleport.service.action;
 
-import java.util.concurrent.Callable;
+import org.springframework.transaction.support.TransactionCallback;
 
-public interface Action<R> extends Callable<R> {
+public interface Action<R> extends TransactionCallback<R> {
 
     String getDescription();
 

@@ -25,8 +25,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class StorageServiceImpl extends AbstractRefreshableDriverService<StorageDriver, StoragePO, StorageRepository> implements StorageService {
 
+    public static final int STORAGE_REFRESH_PRIORITY = 10000;
+
     public StorageServiceImpl(StorageRepository repository, StorageDriver[] drivers) {
         super(StoragePO.class, repository, drivers);
     }
 
+    @Override
+    public int refreshPriority() {
+        return STORAGE_REFRESH_PRIORITY;
+    }
+    
 }

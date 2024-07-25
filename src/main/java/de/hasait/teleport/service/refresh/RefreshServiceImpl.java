@@ -19,8 +19,10 @@ package de.hasait.teleport.service.refresh;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -28,14 +30,14 @@ public class RefreshServiceImpl implements RefreshService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final List<RefreshableService<?>> refreshableServiceList;
+    private final List<RefreshableService<?>> refreshableServiceList = new ArrayList<>();
 
-    public RefreshServiceImpl(List<RefreshableService<?>> refreshableServiceList) {
-        this.refreshableServiceList = refreshableServiceList;
+    public RefreshServiceImpl(RefreshableService<?>[] refreshableServices) {
+        refreshableServiceList.addAll(Arrays.asList(refreshableServices));
+        refreshableServiceList.sort(Comparator.comparingInt(it -> -it.refreshPriority()));
     }
 
     @Override
-    @Transactional
     public void refresh() {
         log.info("Refreshing...");
         for (RefreshableService<?> refreshableService : refreshableServiceList) {

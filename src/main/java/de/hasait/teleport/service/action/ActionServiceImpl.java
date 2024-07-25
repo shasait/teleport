@@ -22,10 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +38,7 @@ public class ActionServiceImpl implements ActionService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private TransactionTemplate transactionTemplate;
     private final List<ActionContribution> actionContributions;
 
     private final LinkedBlockingQueue<ActionFutureTask<?>> workQueue;
@@ -43,7 +46,8 @@ public class ActionServiceImpl implements ActionService {
     private final AtomicBoolean threadShouldRun;
     private final Thread thread;
 
-    public ActionServiceImpl(List<ActionContribution> actionContributions) {
+    public ActionServiceImpl(TransactionTemplate transactionTemplate, List<ActionContribution> actionContributions) {
+        this.transactionTemplate = transactionTemplate;
         this.actionContributions = actionContributions;
         this.workQueue = new LinkedBlockingQueue<>();
         this.executingAction = new AtomicReference<>();
@@ -70,6 +74,14 @@ public class ActionServiceImpl implements ActionService {
                 }
                 actionFutureTask.setRunning(false);
                 executingAction.set(null);
+                try {
+                    actionFutureTask.get();
+                } catch (InterruptedException e) {
+                    // unexpected as get should never block because we wait for run to finish
+                    log.warn("Unexpected exception", e);
+                } catch (ExecutionException e) {
+                    log.error("Action failed: {}", actionFutureTask.getAction().getDescription(), e);
+                }
             }
         } finally {
             log.info("Action execution loop finished");
@@ -99,7 +111,7 @@ public class ActionServiceImpl implements ActionService {
 
     @Override
     public <R> Future<R> submit(Action<R> action) {
-        ActionFutureTask<R> actionFutureTask = new ActionFutureTask<>(action);
+        ActionFutureTask<R> actionFutureTask = new ActionFutureTask<>(transactionTemplate, action);
         workQueue.add(actionFutureTask);
         return actionFutureTask;
     }

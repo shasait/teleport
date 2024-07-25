@@ -17,6 +17,7 @@
 package de.hasait.teleport.service.hv;
 
 import de.hasait.teleport.service.action.AbstractAction;
+import org.springframework.transaction.TransactionStatus;
 
 public class FullSyncVmToOtherHvAction extends AbstractAction<Void> {
 
@@ -40,7 +41,7 @@ public class FullSyncVmToOtherHvAction extends AbstractAction<Void> {
     }
 
     @Override
-    public Void call() throws Exception {
+    public Void doInTransaction(TransactionStatus status) {
         hypervisorService.fullSyncVmToOtherHv(srcHostName, srcHvName, srcVmName, tgtHostName);
         return null;
     }
