@@ -257,4 +257,16 @@ public class VirtualMachinePO implements PersistantObject, HasVirtualMachine {
         return this;
     }
 
+    public boolean stateIsRunning() {
+        return state == VmState.RUNNING;
+    }
+
+    public boolean stateIsShutOff() {
+        return state == VmState.SHUTOFF;
+    }
+
+    public boolean stateIsNotShutOff() {
+        return state != VmState.SHUTOFF;
+    }
+
 }

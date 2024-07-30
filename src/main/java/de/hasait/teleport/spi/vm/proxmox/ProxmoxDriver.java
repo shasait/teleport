@@ -35,9 +35,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, ProxmoxDriverConfig> implements HypervisorDriver {
@@ -74,17 +77,93 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
 
     @Override
     public void start(VirtualMachinePO virtualMachine) {
+        if (virtualMachine.stateIsRunning()) {
+            throw new IllegalStateException("VM already running: " + virtualMachine);
+        }
 
+        if (virtualMachine.stateIsShutOff()) {
+            update(virtualMachine);
+        }
+
+        log.info("Starting VM {}...", virtualMachine);
+
+        CliExecutor exe = cliConfig.createCliConnector(virtualMachine);
+
+        List<String> command = new ArrayList<>();
+        command.add("qm");
+        command.add("start");
+        command.add(virtualMachine.getHvid());
+
+        boolean dryMode = !exe.executeAndWaitExit0(command, 1, TimeUnit.MINUTES, true);
+        if (dryMode) {
+            virtualMachine.setState(VmState.RUNNING);
+        } else {
+            waitForState(exe, virtualMachine, VmState.RUNNING);
+        }
+
+        log.info("VM {} started", virtualMachine);
+
+        if (!dryMode) {
+            refresh(virtualMachine.getHypervisor());
+        }
     }
 
     @Override
     public void shutdown(VirtualMachinePO virtualMachine) {
+        if (virtualMachine.stateIsShutOff()) {
+            throw new IllegalStateException("VM already shut off: " + virtualMachine);
+        }
 
+        log.info("Shutting off VM {}...", virtualMachine);
+
+        CliExecutor exe = cliConfig.createCliConnector(virtualMachine);
+
+        List<String> command = new ArrayList<>();
+        command.add("qm");
+        command.add("shutdown");
+        command.add(virtualMachine.getHvid());
+
+        boolean dryMode = !exe.executeAndWaitExit0(command, 1, TimeUnit.MINUTES, true);
+        if (dryMode) {
+            virtualMachine.setState(VmState.SHUTOFF);
+        } else {
+            waitForState(exe, virtualMachine, VmState.SHUTOFF);
+        }
+
+        log.info("VM {} shut off", virtualMachine);
+
+        if (!dryMode) {
+            refresh(virtualMachine.getHypervisor());
+        }
     }
 
     @Override
     public void kill(VirtualMachinePO virtualMachine) {
+        if (virtualMachine.stateIsShutOff()) {
+            throw new IllegalStateException("VM already shut off: " + virtualMachine);
+        }
 
+        log.info("Killing VM {}...", virtualMachine);
+
+        CliExecutor exe = cliConfig.createCliConnector(virtualMachine);
+
+        List<String> command = new ArrayList<>();
+        command.add("qm");
+        command.add("stop");
+        command.add(virtualMachine.getHvid());
+
+        boolean dryMode = !exe.executeAndWaitExit0(command, 1, TimeUnit.MINUTES, true);
+        if (dryMode) {
+            virtualMachine.setState(VmState.SHUTOFF);
+        } else {
+            waitForState(exe, virtualMachine, VmState.SHUTOFF);
+        }
+
+        log.info("VM {} killed", virtualMachine);
+
+        if (!dryMode) {
+            refresh(virtualMachine.getHypervisor());
+        }
     }
 
     @Override
@@ -95,6 +174,21 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
     @Override
     public void delete(VirtualMachinePO virtualMachine) {
 
+    }
+
+    private void waitForState(CliExecutor exe, VirtualMachinePO virtualMachine, VmState successState) {
+        while (true) {
+            VmState state = ProxmoxUtils.qmStatus(exe, virtualMachine.getHvid());
+            if (state == successState) {
+                break;
+            }
+            log.debug("VM {} is {}", virtualMachine.getName(), state);
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void processListEntry(HypervisorPO hypervisor, ProxmoxDriverConfig config, CliExecutor exe, QmListE entry) {
