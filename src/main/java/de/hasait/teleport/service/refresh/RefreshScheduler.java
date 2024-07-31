@@ -30,16 +30,14 @@ public class RefreshScheduler {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final ActionService actionService;
-    private final RefreshService refreshService;
 
-    public RefreshScheduler(ActionService actionService, RefreshService refreshService) {
+    public RefreshScheduler(ActionService actionService) {
         this.actionService = actionService;
-        this.refreshService = refreshService;
     }
 
     @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES)
     public void scheduleFixedDelayTask() {
-        actionService.submit(new RefreshAction(refreshService));
+        actionService.submit(new RefreshAction());
     }
 
 }

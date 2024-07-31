@@ -25,15 +25,12 @@ import java.util.List;
 @Service
 public class RefreshActionContribution implements ActionContribution {
 
-    private final RefreshService refreshService;
-
-    public RefreshActionContribution(RefreshService refreshService) {
-        this.refreshService = refreshService;
+    public RefreshActionContribution() {
     }
 
     @Override
     public void contributeActions(List<Action<?>> actionList) {
-        actionList.add(new RefreshAction(refreshService));
+        actionList.add(new RefreshAction());
     }
 
 }

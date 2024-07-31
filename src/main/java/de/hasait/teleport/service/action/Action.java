@@ -16,10 +16,17 @@
 
 package de.hasait.teleport.service.action;
 
-import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.context.ApplicationContext;
+import org.springframework.transaction.TransactionStatus;
 
-public interface Action<R> extends TransactionCallback<R> {
+import java.util.Set;
+
+public interface Action<R> {
 
     String getDescription();
+
+    Set<String> getUiBindings();
+
+    R execute(ApplicationContext applicationContext, TransactionStatus transactionStatus);
 
 }

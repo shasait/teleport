@@ -25,4 +25,10 @@ public interface HypervisorService extends RefreshableService<HypervisorPO>, Dri
 
     void fullSyncVmToOtherHv(String srcHostName, String srcHvName, String srcVmName, String tgtHostName);
 
+    void startVm(String hostName, String hvName, String vmName);
+
+    void shutdownVm(String hostName, String hvName, String vmName);
+
+    void killVm(String hostName, String hvName, String vmName);
+
 }

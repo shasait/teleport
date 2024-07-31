@@ -17,20 +17,18 @@
 package de.hasait.teleport.service.refresh;
 
 import de.hasait.teleport.service.action.AbstractAction;
+import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
 public class RefreshAction extends AbstractAction<Void> {
 
-    private final RefreshService refreshService;
-
-    public RefreshAction(RefreshService refreshService) {
+    public RefreshAction() {
         super("Refresh state from drivers");
-        this.refreshService = refreshService;
     }
 
     @Override
-    public Void doInTransaction(TransactionStatus status) {
-        refreshService.refresh();
+    public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
+        applicationContext.getBean(RefreshService.class).refresh();
         return null;
     }
 

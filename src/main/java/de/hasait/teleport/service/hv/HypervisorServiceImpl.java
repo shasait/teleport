@@ -28,11 +28,31 @@ import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class HypervisorServiceImpl extends AbstractRefreshableDriverService<HypervisorDriver, HypervisorPO, HypervisorRepository> implements HypervisorService {
 
     public HypervisorServiceImpl(HypervisorRepository repository, HypervisorDriver[] drivers) {
         super(HypervisorPO.class, repository, drivers);
+    }
+
+    @Override
+    public void startVm(String hostName, String hvName, String vmName) {
+        VirtualMachinePO vm = findVm(hostName, hvName, vmName).orElseThrow();
+        getProviderByIdNotNull(vm).start(vm);
+    }
+
+    @Override
+    public void shutdownVm(String hostName, String hvName, String vmName) {
+        VirtualMachinePO vm = findVm(hostName, hvName, vmName).orElseThrow();
+        getProviderByIdNotNull(vm).shutdown(vm);
+    }
+
+    @Override
+    public void killVm(String hostName, String hvName, String vmName) {
+        VirtualMachinePO vm = findVm(hostName, hvName, vmName).orElseThrow();
+        getProviderByIdNotNull(vm).kill(vm);
     }
 
     @Override
@@ -85,6 +105,14 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
         }
 
         return vmCreateTO;
+    }
+
+    private Optional<VirtualMachinePO> findVm(String hostName, String hvName, String vmName) {
+        return repository.findByHostAndName(hostName, hvName).flatMap(hv -> hv.findVirtualMachineByName(vmName));
+    }
+
+    private HypervisorDriver getProviderByIdNotNull(VirtualMachinePO vm) {
+        return getProviderByIdNotNull(vm.getHypervisor().getDriver());
     }
 
 }

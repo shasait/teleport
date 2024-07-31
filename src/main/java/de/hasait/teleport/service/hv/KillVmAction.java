@@ -20,26 +20,25 @@ import de.hasait.teleport.service.action.AbstractAction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
-public class FullSyncVmToOtherHvAction extends AbstractAction<Void> {
+public class KillVmAction extends AbstractAction<Void> {
 
-    private final String srcHostName;
-    private final String srcHvName;
-    private final String srcVmName;
+    private final String hostName;
+    private final String hvName;
+    private final String vmName;
 
-    private final String tgtHostName;
+    public KillVmAction(String hostName, String hvName, String vmName) {
+        super("Kill VM " + hostName + "/" + hvName + "/" + vmName);
 
-    public FullSyncVmToOtherHvAction(String srcHostName, String srcHvName, String srcVmName, String tgtHostName) {
-        super("Full Sync VM " + srcHostName + "/" + srcHvName + "/" + srcVmName + " to " + tgtHostName);
+        this.hostName = hostName;
+        this.hvName = hvName;
+        this.vmName = vmName;
 
-        this.srcHostName = srcHostName;
-        this.srcHvName = srcHvName;
-        this.srcVmName = srcVmName;
-        this.tgtHostName = tgtHostName;
+        addUiBinding("hostName=" + hostName);
     }
 
     @Override
     public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
-        applicationContext.getBean(HypervisorService.class).fullSyncVmToOtherHv(srcHostName, srcHvName, srcVmName, tgtHostName);
+        applicationContext.getBean(HypervisorService.class).killVm(hostName, hvName, vmName);
         return null;
     }
 

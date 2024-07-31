@@ -28,11 +28,9 @@ import java.util.List;
 public class HypervisorActionContribution implements ActionContribution {
 
     private final VirtualMachineRepository virtualMachineRepository;
-    private final HypervisorService hypervisorService;
 
-    public HypervisorActionContribution(VirtualMachineRepository virtualMachineRepository, HypervisorService hypervisorService) {
+    public HypervisorActionContribution(VirtualMachineRepository virtualMachineRepository) {
         this.virtualMachineRepository = virtualMachineRepository;
-        this.hypervisorService = hypervisorService;
     }
 
     @Override
@@ -41,7 +39,17 @@ public class HypervisorActionContribution implements ActionContribution {
         for (var fullSyncVm : fullSyncVms) {
             VirtualMachinePO srcVm = (VirtualMachinePO) fullSyncVm[0];
             String tgtHostName = (String) fullSyncVm[1];
-            actionList.add(new FullSyncVmToOtherHvAction(hypervisorService, srcVm.obtainHost().getName(), srcVm.obtainHypervisor().getName(), srcVm.getName(), tgtHostName));
+            actionList.add(new FullSyncVmToOtherHvAction(srcVm.obtainHost().getName(), srcVm.obtainHypervisor().getName(), srcVm.getName(), tgtHostName));
+        }
+
+        List<VirtualMachinePO> vms = virtualMachineRepository.findAll();
+        for (var vm : vms) {
+            if (vm.stateIsShutOff()) {
+                actionList.add(new StartVmAction(vm.obtainHost().getName(), vm.obtainHypervisor().getName(), vm.getName()));
+            } else {
+                actionList.add(new ShutdownVmAction(vm.obtainHost().getName(), vm.obtainHypervisor().getName(), vm.getName()));
+                actionList.add(new KillVmAction(vm.obtainHost().getName(), vm.obtainHypervisor().getName(), vm.getName()));
+            }
         }
     }
 

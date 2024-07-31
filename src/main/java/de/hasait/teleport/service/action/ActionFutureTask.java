@@ -16,6 +16,7 @@
 
 package de.hasait.teleport.service.action;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.concurrent.FutureTask;
@@ -27,8 +28,8 @@ public class ActionFutureTask<R> extends FutureTask<R> {
 
     private final AtomicBoolean running = new AtomicBoolean();
 
-    public ActionFutureTask(TransactionTemplate transactionTemplate, Action<R> action) {
-        super(() -> transactionTemplate.execute(action));
+    public ActionFutureTask(ApplicationContext applicationContext, TransactionTemplate transactionTemplate, Action<R> action) {
+        super(() -> transactionTemplate.execute(transactionStatus -> action.execute(applicationContext, transactionStatus)));
 
         this.action = action;
     }

@@ -20,6 +20,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -38,6 +39,7 @@ public class ActionServiceImpl implements ActionService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private ApplicationContext applicationContext;
     private TransactionTemplate transactionTemplate;
     private final List<ActionContribution> actionContributions;
 
@@ -46,7 +48,8 @@ public class ActionServiceImpl implements ActionService {
     private final AtomicBoolean threadShouldRun;
     private final Thread thread;
 
-    public ActionServiceImpl(TransactionTemplate transactionTemplate, List<ActionContribution> actionContributions) {
+    public ActionServiceImpl(ApplicationContext applicationContext, TransactionTemplate transactionTemplate, List<ActionContribution> actionContributions) {
+        this.applicationContext = applicationContext;
         this.transactionTemplate = transactionTemplate;
         this.actionContributions = actionContributions;
         this.workQueue = new LinkedBlockingQueue<>();
@@ -111,7 +114,7 @@ public class ActionServiceImpl implements ActionService {
 
     @Override
     public <R> Future<R> submit(Action<R> action) {
-        ActionFutureTask<R> actionFutureTask = new ActionFutureTask<>(transactionTemplate, action);
+        ActionFutureTask<R> actionFutureTask = new ActionFutureTask<>(applicationContext, transactionTemplate, action);
         workQueue.add(actionFutureTask);
         return actionFutureTask;
     }
