@@ -17,55 +17,16 @@
 package de.hasait.teleport.service;
 
 
-
 import de.hasait.common.util.Util;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 public final class SnapshotNameGenerator {
 
-    public static final Pattern NAME_PATTERN = Pattern.compile("(?<v>\\d+)(?<ci>[ci])(?:-(?<rp>[A-Za-z\\d]+))?");
-    public static final String NAME_PATTERN_VERSION_GROUPNAME = "v";
-    public static final String NAME_PATTERN_CONSISTENT_GROUPNAME = "ci";
-    public static final String NAME_PATTERN_RANDOMPART_GROUPNAME = "rp";
-
-    private static final String SNAPSHOT_NAME_RP_CHARS = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789";
-    private static final int SNAPSHOT_NAME_RP_CHARS_LEN = SNAPSHOT_NAME_RP_CHARS.length();
-
-    private final Map<Integer, String> randomPartByVersionCache = new ConcurrentHashMap<>();
-
-    private final AtomicInteger maxSnapshotVersion = new AtomicInteger();
-
-    public String createSnapshotName(boolean consistent, int version) {
-        if (version < 0 || version > 99999999) {
-            throw new IllegalArgumentException("version out of range: " + version);
-        }
-        String versionString = Integer.toString(version);
-        return "0".repeat(8 - versionString.length()) + versionString + (consistent ? "c" : "i") + "-" + getOrCreateRandomPart(version);
+    public static String create(boolean consistent) {
+        return Util.nextRandomStringOnlyLetters(14).toLowerCase() + "_" + (consistent ? "c" : "i");
     }
 
-    public String getOrCreateRandomPart(int version) {
-        return randomPartByVersionCache.computeIfAbsent(version, ignored -> createRandomPart());
-    }
-
-    public void registerRandomPart(int version, String randomPart) {
-        randomPartByVersionCache.putIfAbsent(version, randomPart);
-        maxSnapshotVersion.updateAndGet(current -> Math.max(current, version));
-    }
-
-    public int getMaxSnapshotVersion() {
-        return maxSnapshotVersion.get();
-    }
-
-    private String createRandomPart() {
-        StringBuilder randomPartSB = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            randomPartSB.append(SNAPSHOT_NAME_RP_CHARS.charAt(Util.RANDOM.nextInt(SNAPSHOT_NAME_RP_CHARS_LEN)));
-        }
-        return randomPartSB.toString();
+    public static boolean isConsistent(String name) {
+        return name.endsWith("_c");
     }
 
 }

@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface HostRepository extends SearchableRepository<HostPO, Long> {
 
@@ -32,5 +34,7 @@ public interface HostRepository extends SearchableRepository<HostPO, Long> {
     @Override
     @Query("SELECT COUNT(r) FROM HostPO r WHERE r.name LIKE %:search% OR r.description LIKE %:search%")
     long searchCount(String search);
+
+    Optional<HostPO> findByName(String name);
 
 }

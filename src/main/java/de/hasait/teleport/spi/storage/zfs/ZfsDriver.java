@@ -22,9 +22,9 @@ import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.common.util.cli.InheritPIOStrategy;
 import de.hasait.common.util.cli.WriteBytesPIOStrategy;
 import de.hasait.teleport.CliConfig;
+import de.hasait.teleport.api.VolumeCreateTO;
 import de.hasait.teleport.api.VolumeState;
 import de.hasait.teleport.domain.HasStorage;
-import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
@@ -32,7 +32,6 @@ import de.hasait.teleport.domain.VolumeSnapshotPO;
 import de.hasait.teleport.domain.VolumeSnapshotRepository;
 import de.hasait.teleport.service.CanResult;
 import de.hasait.teleport.service.SnapshotNameGenerator;
-import de.hasait.teleport.service.VolumeTO;
 import de.hasait.teleport.spi.storage.StorageDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,7 +125,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
     }
 
     @Override
-    public void create(StoragePO storage, VolumeTO config) {
+    public VolumePO create(StoragePO storage, VolumeCreateTO config) {
         log.info("Creating Volume {} at {}...", config.getName(), storage);
 
         CliExecutor exe = cliConfig.createCliConnector(storage);
@@ -157,10 +156,12 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
         if (!dryMode) {
             refresh(storage);
         }
+
+        return storage.findVolumeByName(config.getName()).orElseThrow();
     }
 
     @Override
-    public CanResult canUpdate(VolumePO volume, VolumeTO config) {
+    public CanResult canUpdate(VolumePO volume, VolumeCreateTO config) {
         if (volume.stateIsActive()) {
             return CanResult.invalid("Volume " + volume + " is active");
         }
@@ -176,7 +177,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
     }
 
     @Override
-    public boolean update(VolumePO volume, VolumeTO config) {
+    public boolean update(VolumePO volume, VolumeCreateTO config) {
         CanResult canResult = canUpdate(volume, config);
         if (canResult.ensureValidAndReturnHasNoEffect()) {
             return false;
@@ -280,20 +281,23 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
     }
 
     @Override
-    public void takeSnapshot(SnapshotData snapshotData, VolumePO... volumes) {
+    public void takeSnapshot(String snapshotName, VolumePO... volumes) {
+        boolean consistent = SnapshotNameGenerator.isConsistent(snapshotName);
+
         StoragePO storage = null;
         List<String> zfsObjects = new ArrayList<>();
 
         for (VolumePO volume : volumes) {
-            String snapshotFullName = volume + "@" + snapshotData.getName();
-            if (volume.findSnapshotByName(snapshotData.getName()).isPresent()) {
+            String snapshotFullName = volume + "@" + snapshotName;
+
+            if (volume.findSnapshotByName(snapshotName).isPresent()) {
                 throw new RuntimeException("Snapshot already exists: " + snapshotFullName);
             }
 
-            if (volume.stateIsActive() && snapshotData.isConsistent()) {
+            if (volume.stateIsActive() && consistent) {
                 throw new IllegalArgumentException("Cannot create consistent Snapshot for active Volume: " + snapshotFullName);
             }
-            if (volume.stateIsDirtyOrInactive() && !snapshotData.isConsistent()) {
+            if (volume.stateIsDirtyOrInactive() && !consistent) {
                 throw new IllegalArgumentException("Snapshot is marked as inconsistent although Volume is not active: " + snapshotFullName);
             }
 
@@ -302,10 +306,6 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
             } else if (storage != volume.getStorage()) {
                 throw new IllegalArgumentException("Cannot take atomic snapshot across different storages: " + snapshotFullName + " vs. " + storage);
             }
-        }
-
-        for (VolumePO volume : volumes) {
-            String snapshotFullName = volume + "@" + snapshotData.getName();
 
             if (volume.stateIsInactive()) {
                 log.warn("Taking Snapshot {} of inactive Volume...", snapshotFullName);
@@ -313,7 +313,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
                 log.info("Taking Snapshot {}...", snapshotFullName);
             }
 
-            zfsObjects.add(determineZfsObject(volume, snapshotData));
+            zfsObjects.add(determineZfsObject(volume, snapshotName));
         }
 
         if (storage == null) {
@@ -331,7 +331,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
         if (dryMode) {
             LocalDateTime creation = LocalDateTime.now();
             for (VolumePO volume : volumes) {
-                new VolumeSnapshotPO(volume, snapshotData.getName(), 0, creation);
+                new VolumeSnapshotPO(volume, snapshotName, creation, consistent, 0);
             }
         }
 
@@ -367,7 +367,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
 
     @Override
     public void syncVolumeIncr(VolumeSnapshotPO sender, VolumeSnapshotPO receiver) {
-        VolumeSnapshotPO senderCommon = sender.getVolume().findSnapshotByName(receiver.getData().getName()).orElseThrow();
+        VolumeSnapshotPO senderCommon = sender.getVolume().findSnapshotByName(receiver.getName()).orElseThrow();
 
         log.info("Incremental syncing Snapshot {} -> {}...", sender, receiver);
 
@@ -388,7 +388,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
 
         boolean dryMode = !exe.executeAndWaitExit0(bashCommand, new WriteBytesPIOStrategy(bashZfsPipe.toString()), InheritPIOStrategy.INSTANCE, InheritPIOStrategy.INSTANCE, Long.MAX_VALUE, TimeUnit.MILLISECONDS, true);
         if (dryMode) {
-            new VolumeSnapshotPO(receiver.getVolume(), sender.getData().getName(), sender.getUsedBytes(), LocalDateTime.now());
+            new VolumeSnapshotPO(receiver.getVolume(), sender.getName(), LocalDateTime.now(), sender.isConsistent(), sender.getUsedBytes());
         }
 
         log.info("Incremental sync completed: {} -> {}", sender, receiver);
@@ -399,7 +399,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
     }
 
     @Override
-    public void syncVolumeFull(VolumeSnapshotPO sender, StoragePO receiverStorage, String receiverVolumeName) {
+    public void syncVolumeFull(VolumeSnapshotPO sender, StoragePO receiverStorage, String receiverVolumeName, boolean replaceExisting) {
         log.info("Full syncing Snapshot {} -> {} as {}...", sender, receiverStorage, receiverVolumeName);
 
         CliExecutor sexe = cliConfig.createCliConnector(sender);
@@ -410,6 +410,9 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
         bashZfsPipe.append(" | ");
         cliConfig.appendSsh(sender, receiverStorage, bashZfsPipe);
         bashZfsPipe.append("zfs recv -v");
+        if (replaceExisting) {
+            bashZfsPipe.append(" -F");
+        }
         bashZfsPipe.append(" '").append(determineZfsVolume(receiverStorage, receiverVolumeName)).append("'");
 
         List<String> bashCommand = new ArrayList<>();
@@ -421,7 +424,7 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
             VolumePO senderVolume = sender.getVolume();
             String dev = determineZfsDevice(receiverStorage, receiverVolumeName);
             VolumePO receiverVolume = new VolumePO(receiverStorage, receiverVolumeName, dev, senderVolume.getSizeBytes(), VolumeState.INACTIVE, senderVolume.getUsedBytes());
-            new VolumeSnapshotPO(receiverVolume, sender.getData().getName(), sender.getUsedBytes(), LocalDateTime.now());
+            new VolumeSnapshotPO(receiverVolume, sender.getName(), LocalDateTime.now(), sender.isConsistent(), sender.getUsedBytes());
         }
 
         log.info("Full sync completed: {} -> {} as {}", sender, receiverStorage, receiverVolumeName);
@@ -475,29 +478,25 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
                     String snapshotName = volumeSnapshotMatcher.group("vs");
                     VolumePO volume = storage.findVolumeByName(volumeName).orElse(null);
                     if (volume != null) {
-                        if (SnapshotNameGenerator.NAME_PATTERN.matcher(snapshotName).matches()) {
-                            VolumeSnapshotPO existingSnapshot = volume.findSnapshotByName(snapshotName).orElse(null);
-                            VolumeSnapshotPO snapshot;
-                            LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
-                            if (creation == null) {
-                                throw new IllegalArgumentException("creation missing");
-                            }
-                            Long used = ZFS_PROP___USED.getFrom(properties);
-                            if (used == null) {
-                                throw new IllegalArgumentException("used missing");
-                            }
-                            if (existingSnapshot != null) {
-                                snapshot = existingSnapshot;
-                                snapshot.getData().setCreation(creation);
-                            } else {
-                                snapshot = new VolumeSnapshotPO();
-                                snapshot.setVolume(volume);
-                                snapshot.setData(new SnapshotData(snapshotName, creation));
-                            }
-                            snapshot.setUsedBytes(used);
-                            volumeSnapshotRepository.save(snapshot);
-                            return;
+                        VolumeSnapshotPO existingSnapshot = volume.findSnapshotByName(snapshotName).orElse(null);
+                        VolumeSnapshotPO snapshot;
+                        LocalDateTime creation = ZFS_PROP___CREATION.getFrom(properties);
+                        if (creation == null) {
+                            throw new IllegalArgumentException("creation missing");
                         }
+                        Long used = ZFS_PROP___USED.getFrom(properties);
+                        if (used == null) {
+                            throw new IllegalArgumentException("used missing");
+                        }
+                        if (existingSnapshot != null) {
+                            snapshot = existingSnapshot;
+                            snapshot.setCreation(creation);
+                            snapshot.setUsedBytes(used);
+                        } else {
+                            snapshot = new VolumeSnapshotPO(volume, snapshotName, creation, SnapshotNameGenerator.isConsistent(snapshotName), used);
+                        }
+                        volumeSnapshotRepository.save(snapshot);
+                        return;
                     }
                 }
             }
@@ -587,14 +586,14 @@ public class ZfsDriver extends AbstractRefreshableDriver<StoragePO, ZfsDriverCon
             return determineZfsVolume(volume);
         }
         if (hasStorage instanceof VolumeSnapshotPO snapshot) {
-            return determineZfsVolume(snapshot.getVolume()) + "@" + snapshot.getData().getName();
+            return determineZfsVolume(snapshot.getVolume()) + "@" + snapshot.getName();
         }
         throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
     }
 
-    private String determineZfsObject(HasStorage hasStorage, SnapshotData snapshotData) {
+    private String determineZfsObject(HasStorage hasStorage, String snapshotName) {
         if (hasStorage instanceof VolumePO) {
-            return determineZfsObject(hasStorage) + "@" + snapshotData.getName();
+            return determineZfsObject(hasStorage) + "@" + snapshotName;
         }
         throw new RuntimeException("Unsupported hasStorage: " + hasStorage);
     }

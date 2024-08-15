@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.spi.vm;
+package de.hasait.teleport.spi.vm.virsh;
 
-import de.hasait.common.service.RefreshableDriver;
 import de.hasait.teleport.api.VmCreateTO;
-import de.hasait.teleport.domain.HypervisorPO;
-import de.hasait.teleport.domain.VirtualMachinePO;
 
-public interface HypervisorDriver extends RefreshableDriver<HypervisorPO> {
+import java.util.ArrayList;
+import java.util.List;
 
-    VirtualMachinePO create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation);
+public class VirshCreateTemplateModel {
 
-    void start(VirtualMachinePO virtualMachine);
+    public VmCreateTO config;
 
-    void shutdown(VirtualMachinePO virtualMachine);
+    public VirshCreateTemplateCpu cpu;
 
-    void kill(VirtualMachinePO virtualMachine);
-
-    void update(VirtualMachinePO virtualMachine);
-
-    void delete(VirtualMachinePO virtualMachine);
+    public List<VirshCreateTemplateDisk> disks = new ArrayList<>();
 
 }

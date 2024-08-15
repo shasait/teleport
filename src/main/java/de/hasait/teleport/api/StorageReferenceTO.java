@@ -18,21 +18,21 @@ package de.hasait.teleport.api;
 
 import java.io.Serializable;
 
-public class HypervisorReferenceTO implements Serializable {
+public class StorageReferenceTO implements Serializable {
 
     private HostReferenceTO host;
 
     private String name;
 
-    public HypervisorReferenceTO() {
+    public StorageReferenceTO() {
     }
 
-    public HypervisorReferenceTO(HostReferenceTO host, String name) {
+    public StorageReferenceTO(HostReferenceTO host, String name) {
         this.host = host;
         this.name = name;
     }
 
-    public HypervisorReferenceTO(String hostName, String name) {
+    public StorageReferenceTO(String hostName, String name) {
         this(new HostReferenceTO(hostName), name);
     }
 

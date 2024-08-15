@@ -35,6 +35,15 @@ public class Util {
 
     public static final Random RANDOM = new Random();
 
+    private static final String LETTERS_LC = "abcdefghijklmnopqrstuvwxyz";
+    private static final String LETTERS_UC = LETTERS_LC.toUpperCase();
+    private static final String DIGITS = "0123456789";
+    private static final String SPECIAL = "-+_";
+    private static final String LETTERS = LETTERS_UC + LETTERS_LC;
+    private static final char[] LETTERS_A = LETTERS.toCharArray();
+    private static final String CHARS = LETTERS + DIGITS + SPECIAL;
+    private static final char[] CHARS_A = CHARS.toCharArray();
+
     public static String millisToHuman(LocalDateTime seed, LocalDateTime next, int limit) {
         long millis = Duration.between(seed, next).toMillis();
         return millisToHuman(millis, limit);
@@ -89,6 +98,27 @@ public class Util {
         List<ScheduledFuture<?>> futureList = scheduledFutures.computeIfAbsent(id, ignored -> new CopyOnWriteArrayList<>());
         futureList.removeIf(Future::isDone);
         futureList.add(scheduledFuture);
+    }
+
+    public static String nextRandomString(int len) {
+        StringBuilder sb = new StringBuilder();
+        char[] chars = LETTERS_A;
+        for (int i = 0; i < len; i++) {
+            int index = RANDOM.nextInt(chars.length);
+            sb.append(chars[index]);
+            chars = CHARS_A;
+        }
+        return sb.toString();
+    }
+
+    public static String nextRandomStringOnlyLetters(int len) {
+        StringBuilder sb = new StringBuilder();
+        char[] chars = LETTERS_A;
+        for (int i = 0; i < len; i++) {
+            int index = RANDOM.nextInt(chars.length);
+            sb.append(chars[index]);
+        }
+        return sb.toString();
     }
 
 }

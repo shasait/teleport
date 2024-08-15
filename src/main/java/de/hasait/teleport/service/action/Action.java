@@ -19,9 +19,10 @@ package de.hasait.teleport.service.action;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
+import java.io.Serializable;
 import java.util.Set;
 
-public interface Action<R> {
+public interface Action<R> extends Serializable {
 
     String getDescription();
 

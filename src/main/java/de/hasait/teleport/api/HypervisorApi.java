@@ -20,15 +20,15 @@ import de.hasait.teleport.service.CanResult;
 
 import java.util.List;
 
-public interface VirtualMachineApi {
+public interface HypervisorApi {
 
     // Create
 
-    List<HypervisorReferenceTO> canCreateVm(VmCreateTO vmCreateTO);
+    List<HostReferenceTO> canCreateVm(VmCreateTO vmCreateTO);
 
-    CanResult canCreateVm(HypervisorReferenceTO hypervisorReferenceTO, VmCreateTO vmCreateTO);
+    CanResult canCreateVm(HostReferenceTO hostReferenceTO, VmCreateTO vmCreateTO);
 
-    boolean createVm(HypervisorReferenceTO hypervisorReferenceTO, VmCreateTO vmCreateTO);
+    VirtualMachineTO createVm(HostReferenceTO hostReferenceTO, VmCreateTO vmCreateTO);
 
     // State
 
@@ -63,5 +63,9 @@ public interface VirtualMachineApi {
     CanResult canFullDeleteVm(VirtualMachineReferenceTO virtualMachineReferenceTO);
 
     boolean fullDeleteVm(VirtualMachineReferenceTO virtualMachineReferenceTO);
+
+    // Sync
+
+    void fullSyncVmToOtherHv(VirtualMachineReferenceTO srcVmTO, HostReferenceTO tgtHostTO);
 
 }

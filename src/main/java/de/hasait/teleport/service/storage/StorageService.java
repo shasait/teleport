@@ -17,10 +17,48 @@
 package de.hasait.teleport.service.storage;
 
 import de.hasait.common.service.DriverService;
+import de.hasait.teleport.api.StorageApi;
+import de.hasait.teleport.api.VolumeCreateTO;
+import de.hasait.teleport.domain.HostPO;
 import de.hasait.teleport.domain.StoragePO;
+import de.hasait.teleport.domain.VolumePO;
+import de.hasait.teleport.domain.VolumeSnapshotPO;
+import de.hasait.teleport.service.CanResult;
 import de.hasait.teleport.service.refresh.RefreshableService;
 import de.hasait.teleport.spi.storage.StorageDriver;
 
-public interface StorageService extends RefreshableService<StoragePO>, DriverService<StorageDriver> {
+public interface StorageService extends StorageApi, RefreshableService<StoragePO>, DriverService<StorageDriver> {
+
+    // Create
+
+    CanResult canCreateVolume(HostPO host, VolumeCreateTO volumeCreateTO);
+
+    VolumePO createVolume(HostPO host, VolumeCreateTO volumeCreateTO);
+
+    // State
+
+    CanResult canActivateVolume(VolumePO volume);
+
+    boolean activateVolume(VolumePO volume);
+
+    CanResult canDeactivateVolume(VolumePO volume);
+
+    boolean deactivateVolume(VolumePO volume);
+
+    // Delete
+
+    CanResult canDeleteVolume(VolumePO volume);
+
+    boolean deleteVolume(VolumePO volume);
+
+    // Sync
+
+    CanResult canTakeSnapshot(String snapshotName, VolumePO... volumes);
+
+    boolean takeSnapshot(String snapshotName, VolumePO... volumes);
+
+    CanResult canFullSync(VolumeSnapshotPO srcVolumeSnapshot, StoragePO tgtStorage, String volumeName, boolean replaceExisting);
+
+    boolean fullSync(VolumeSnapshotPO srcVolumeSnapshot, StoragePO tgtStorage, String volumeName, boolean replaceExisting);
 
 }

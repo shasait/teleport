@@ -42,4 +42,6 @@ public interface VirtualMachineRepository extends SearchableRepository<VirtualMa
             """)
     List<Object[]> findFullSyncVms();
 
+    List<VirtualMachinePO> findByHvid(String hvid);
+
 }

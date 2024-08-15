@@ -17,18 +17,49 @@
 package de.hasait.teleport.service.hv;
 
 import de.hasait.common.service.DriverService;
+import de.hasait.teleport.api.HypervisorApi;
+import de.hasait.teleport.api.VmCreateTO;
+import de.hasait.teleport.domain.HostPO;
 import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.domain.VirtualMachinePO;
+import de.hasait.teleport.service.CanResult;
 import de.hasait.teleport.service.refresh.RefreshableService;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
 
-public interface HypervisorService extends RefreshableService<HypervisorPO>, DriverService<HypervisorDriver> {
+public interface HypervisorService extends HypervisorApi, RefreshableService<HypervisorPO>, DriverService<HypervisorDriver> {
 
-    void fullSyncVmToOtherHv(String srcHostName, String srcHvName, String srcVmName, String tgtHostName);
+    // Create
 
-    void startVm(String hostName, String hvName, String vmName);
+    CanResult canCreateVm(HostPO host, VmCreateTO vmCreateTO);
 
-    void shutdownVm(String hostName, String hvName, String vmName);
+    VirtualMachinePO createVm(HostPO host, VmCreateTO vmCreateTO);
 
-    void killVm(String hostName, String hvName, String vmName);
+    // State
+
+    CanResult canStartVm(VirtualMachinePO virtualMachine);
+
+    boolean startVm(VirtualMachinePO virtualMachine);
+
+    CanResult canShutdownVm(VirtualMachinePO virtualMachine);
+
+    boolean shutdownVm(VirtualMachinePO virtualMachine);
+
+    CanResult canKillVm(VirtualMachinePO virtualMachine);
+
+    boolean killVm(VirtualMachinePO virtualMachine);
+
+    // Update
+
+    CanResult canUpdateVm(VirtualMachinePO virtualMachine);
+
+    boolean updateVm(VirtualMachinePO virtualMachine);
+
+    // Delete
+
+    CanResult canDeleteVm(VirtualMachinePO virtualMachine);
+
+    boolean deleteVm(VirtualMachinePO virtualMachine);
+
+    boolean fullDeleteVm(VirtualMachinePO virtualMachine);
 
 }

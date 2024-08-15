@@ -16,29 +16,26 @@
 
 package de.hasait.teleport.service.hv;
 
+import de.hasait.teleport.api.VirtualMachineReferenceTO;
 import de.hasait.teleport.service.action.AbstractAction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
 public class KillVmAction extends AbstractAction<Void> {
 
-    private final String hostName;
-    private final String hvName;
-    private final String vmName;
+    private final VirtualMachineReferenceTO vm;
 
     public KillVmAction(String hostName, String hvName, String vmName) {
         super("Kill VM " + hostName + "/" + hvName + "/" + vmName);
 
-        this.hostName = hostName;
-        this.hvName = hvName;
-        this.vmName = vmName;
+        this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
 
         addUiBinding("hostName=" + hostName);
     }
 
     @Override
     public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
-        applicationContext.getBean(HypervisorService.class).killVm(hostName, hvName, vmName);
+        applicationContext.getBean(HypervisorService.class).killVm(vm);
         return null;
     }
 

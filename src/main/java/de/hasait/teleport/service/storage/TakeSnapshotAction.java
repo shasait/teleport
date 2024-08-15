@@ -14,28 +14,31 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.hv;
+package de.hasait.teleport.service.storage;
 
-import de.hasait.teleport.api.VirtualMachineReferenceTO;
+import de.hasait.teleport.api.VolumeReferenceTO;
 import de.hasait.teleport.service.action.AbstractAction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
-public class StartVmAction extends AbstractAction<Void> {
+import java.util.Set;
 
-    private final VirtualMachineReferenceTO vm;
+public class TakeSnapshotAction extends AbstractAction<Void> {
 
-    public StartVmAction(String hostName, String hvName, String vmName) {
-        super("Start VM " + hostName + "/" + hvName + "/" + vmName);
+    private final String snapshotName;
 
-        this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
+    private final Set<VolumeReferenceTO> volumes;
 
-        addUiBinding("hostName=" + hostName);
+    public TakeSnapshotAction(String snapshotName, Set<VolumeReferenceTO> volumes) {
+        super("Take snapshot " + snapshotName + " for " + volumes);
+
+        this.snapshotName = snapshotName;
+        this.volumes = volumes;
     }
 
     @Override
     public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
-        applicationContext.getBean(HypervisorService.class).startVm(vm);
+        applicationContext.getBean(StorageService.class).takeSnapshot(snapshotName, volumes.toArray(new VolumeReferenceTO[0]));
         return null;
     }
 

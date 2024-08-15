@@ -22,6 +22,8 @@ import java.util.List;
 
 public class VmCreateTO implements Serializable {
 
+    private String hypervisorName;
+
     private String name;
 
     private String description;
@@ -36,9 +38,17 @@ public class VmCreateTO implements Serializable {
 
     private int vgaMemKb;
 
-    private final List<VmCreateVolumeTO> volumes = new ArrayList<>();
+    private final List<VolumeAttachmentCreateTO> volumeAttachments = new ArrayList<>();
 
     private final List<VmCreateNetIfTO> networkInterfaces = new ArrayList<>();
+
+    public String getHypervisorName() {
+        return hypervisorName;
+    }
+
+    public void setHypervisorName(String hypervisorName) {
+        this.hypervisorName = hypervisorName;
+    }
 
     public String getName() {
         return name;
@@ -96,8 +106,8 @@ public class VmCreateTO implements Serializable {
         this.vgaMemKb = vgaMemKb;
     }
 
-    public List<VmCreateVolumeTO> getVolumes() {
-        return volumes;
+    public List<VolumeAttachmentCreateTO> getVolumeAttachments() {
+        return volumeAttachments;
     }
 
     public List<VmCreateNetIfTO> getNetworkInterfaces() {

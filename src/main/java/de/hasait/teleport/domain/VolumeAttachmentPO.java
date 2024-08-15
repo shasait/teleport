@@ -49,6 +49,11 @@ public class VolumeAttachmentPO implements PersistantObject, HasVirtualMachine, 
 
     @Size(min = 1, max = 32)
     @NotNull
+    @Column(name = "TYPE", nullable = false)
+    private String type;
+
+    @Size(min = 1, max = 32)
+    @NotNull
     @Column(name = "DEV", nullable = false)
     private String dev;
 
@@ -59,8 +64,9 @@ public class VolumeAttachmentPO implements PersistantObject, HasVirtualMachine, 
     public VolumeAttachmentPO() {
     }
 
-    public VolumeAttachmentPO(VirtualMachinePO virtualMachine, String dev, VolumePO volume) {
+    public VolumeAttachmentPO(VirtualMachinePO virtualMachine, String type, String dev, VolumePO volume) {
         this.virtualMachine = virtualMachine;
+        this.type = type;
         this.dev = dev;
         this.volume = volume;
 
@@ -93,6 +99,14 @@ public class VolumeAttachmentPO implements PersistantObject, HasVirtualMachine, 
 
     public void setVirtualMachine(VirtualMachinePO virtualMachine) {
         this.virtualMachine = virtualMachine;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getDev() {

@@ -174,7 +174,7 @@ public final class VolumePO implements PersistantObject, HasVolume {
     // Non properties to not conflict with bean reflection
 
     public Optional<VolumeSnapshotPO> findSnapshotByName(String name) {
-        return getSnapshots().stream().filter(it -> it.getData().getName().equals(name)).findAny();
+        return getSnapshots().stream().filter(it -> it.getName().equals(name)).findAny();
     }
 
     @Override

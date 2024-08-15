@@ -18,13 +18,16 @@ package de.hasait.teleport.spi.vm.virsh;
 
 import com.google.gson.Gson;
 import de.hasait.common.service.AbstractRefreshableDriver;
+import de.hasait.common.util.Util;
 import de.hasait.common.util.cli.CliExecutor;
+import de.hasait.common.util.cli.InheritPIOStrategy;
 import de.hasait.common.util.xml.XmlDocument;
 import de.hasait.common.util.xml.XmlElement;
 import de.hasait.common.util.xml.XmlElements;
 import de.hasait.teleport.CliConfig;
 import de.hasait.teleport.api.VmCreateTO;
 import de.hasait.teleport.api.VmState;
+import de.hasait.teleport.api.VolumeCreateTO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.NetworkInterfacePO;
 import de.hasait.teleport.domain.NetworkPO;
@@ -33,13 +36,19 @@ import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
+import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
+import freemarker.ext.beans.BeansWrapperBuilder;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.Version;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -54,13 +63,15 @@ public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDr
     private final CliConfig cliConfig;
     private final VolumeRepository volumeRepository;
     private final VirtualMachineRepository virtualMachineRepository;
+    private final StorageService storageService;
 
-    public VirshDriver(@Autowired CliConfig cliConfig, VolumeRepository volumeRepository, VirtualMachineRepository virtualMachineRepository) {
+    public VirshDriver(CliConfig cliConfig, VolumeRepository volumeRepository, VirtualMachineRepository virtualMachineRepository, StorageService storageService) {
         super("virsh", "Virsh Hypervisor Driver", null);
 
         this.cliConfig = cliConfig;
         this.volumeRepository = volumeRepository;
         this.virtualMachineRepository = virtualMachineRepository;
+        this.storageService = storageService;
     }
 
     @Override
@@ -75,8 +86,26 @@ public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDr
     }
 
     @Override
-    public void create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
+    public VirtualMachinePO create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
+        boolean dryMode;
+        if (runInstallation) {
+            // TODO implement
+            throw new RuntimeException("NYI");
+        } else {
+            dryMode = virshDefineFromTemplate(hypervisor, config);
+        }
 
+        if (dryMode) {
+            new VirtualMachinePO(hypervisor, config.getName(), VmState.SHUTOFF);
+        }
+
+        log.info("VM {} created", config.getName());
+
+        if (!dryMode) {
+            refresh(hypervisor);
+        }
+
+        return hypervisor.findVirtualMachineByName(config.getName()).orElseThrow();
     }
 
     @Override
@@ -260,15 +289,17 @@ public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDr
                 VolumePO volume = volumes.get(0);
 
                 XmlElement firstTargetElement = diskElement.getFirstElement("target").orElseThrow();
+                String tbus = firstTargetElement.getAttribute("bus");
                 String tdev = firstTargetElement.getAttribute("dev");
 
                 VolumeAttachmentPO existingVolumeAttachment = virtualMachine.findVolumeAttachmentByDev(tdev).orElse(null);
                 VolumeAttachmentPO volumeAttachment;
                 if (existingVolumeAttachment != null) {
                     volumeAttachment = existingVolumeAttachment;
+                    volumeAttachment.setType(tbus);
                     volumeAttachment.setVolume(volume);
                 } else {
-                    volumeAttachment = new VolumeAttachmentPO(virtualMachine, tdev, volume);
+                    volumeAttachment = new VolumeAttachmentPO(virtualMachine, tbus, tdev, volume);
                 }
 
                 volumeAttachments.add(volumeAttachment);
@@ -316,6 +347,60 @@ public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDr
         }
 
         virtualMachine.getNetworkInterfaces().retainAll(networkInterfaces);
+    }
+
+    private boolean virshDefineFromTemplate(HypervisorPO hypervisor, VmCreateTO config) {
+        String configXml;
+        try {
+            StringWriter configXmlStringWriter = new StringWriter();
+            Version version = Configuration.VERSION_2_3_32;
+            Configuration configuration = new Configuration(version);
+            configuration.setDefaultEncoding(StandardCharsets.UTF_8.name());
+            configuration.setClassForTemplateLoading(getClass(), "");
+            configuration.setNumberFormat("c");
+            BeansWrapperBuilder beansWrapperBuilder = new BeansWrapperBuilder(version);
+            beansWrapperBuilder.setExposeFields(true);
+            configuration.setObjectWrapper(beansWrapperBuilder.build());
+            String type = "linux-64";
+            Template template = configuration.getTemplate("config-" + type + ".xml.ftl");
+
+            VirshCreateTemplateModel templateModel = new VirshCreateTemplateModel();
+            templateModel.config = config;
+            templateModel.cpu = new VirshCreateTemplateCpu();
+            // TODO templateModel.cpu.topoextPolicy = hypervisor.getInfo().isTopoext() ? "require" : "optional";
+            int vaIndex = 0;
+            for (var vaConfig : config.getVolumeAttachments()) {
+                VolumeCreateTO vConfig = vaConfig.getVolume();
+                vConfig.setName(createVolumeName(config.getName(), vaIndex));
+                VolumePO volume = storageService.createVolume(hypervisor.getHost(), vConfig);
+                String devOnHv = volume.getDev();
+                String devInVm = vaConfig.getDev();
+                VirshCreateTemplateDisk disk = new VirshCreateTemplateDisk();
+                disk.srcDev = devOnHv;
+                disk.tgtDev = devInVm;
+                templateModel.disks.add(disk);
+                vaIndex++;
+            }
+
+            template.process(templateModel, configXmlStringWriter);
+            configXml = configXmlStringWriter.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        CliExecutor exe = cliConfig.createCliConnector(hypervisor);
+        String file = "/tmp/" + Util.nextRandomString(8) + ".xml";
+
+        boolean dryMode = !exe.createOrUpdateFile(file, "root:root", "600", configXml, true);
+        exe.executeAndWaitExit0(List.of("virsh", "define", file), InheritPIOStrategy.INSTANCE, InheritPIOStrategy.INSTANCE, 30, TimeUnit.SECONDS, true);
+
+        exe.executeAndWaitExit0(List.of("rm", "-v", file), InheritPIOStrategy.INSTANCE, InheritPIOStrategy.INSTANCE, 30, TimeUnit.SECONDS, true);
+
+        return dryMode;
+    }
+
+    private String createVolumeName(String vmName, int volumeNumber) {
+        return vmName + "/v" + volumeNumber;
     }
 
 }

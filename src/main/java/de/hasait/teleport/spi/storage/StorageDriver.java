@@ -17,21 +17,20 @@
 package de.hasait.teleport.spi.storage;
 
 import de.hasait.common.service.RefreshableDriver;
+import de.hasait.teleport.api.VolumeCreateTO;
 import de.hasait.teleport.api.VolumeState;
-import de.hasait.teleport.domain.SnapshotData;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeSnapshotPO;
 import de.hasait.teleport.service.CanResult;
-import de.hasait.teleport.service.VolumeTO;
 
 public interface StorageDriver extends RefreshableDriver<StoragePO> {
 
-    void create(StoragePO storage, VolumeTO config);
+    VolumePO create(StoragePO storage, VolumeCreateTO config);
 
-    CanResult canUpdate(VolumePO volume, VolumeTO config);
+    CanResult canUpdate(VolumePO volume, VolumeCreateTO config);
 
-    boolean update(VolumePO volume, VolumeTO config);
+    boolean update(VolumePO volume, VolumeCreateTO config);
 
     /**
      * Return device path for attaching to a {@link de.hasait.teleport.domain.VirtualMachinePO}.
@@ -61,7 +60,7 @@ public interface StorageDriver extends RefreshableDriver<StoragePO> {
     /**
      * Atomically create {@link VolumeSnapshotPO}s.
      */
-    void takeSnapshot(SnapshotData snapshotData, VolumePO... volumes);
+    void takeSnapshot(String snapshotName, VolumePO... volumes);
 
     /**
      * Delete {@link VolumeSnapshotPO}.
@@ -70,6 +69,6 @@ public interface StorageDriver extends RefreshableDriver<StoragePO> {
 
     void syncVolumeIncr(VolumeSnapshotPO sender, VolumeSnapshotPO receiver);
 
-    void syncVolumeFull(VolumeSnapshotPO sender, StoragePO receiverStorage, String receiverVolumeName);
+    void syncVolumeFull(VolumeSnapshotPO sender, StoragePO receiverStorage, String receiverVolumeName, boolean replaceExisting);
 
 }

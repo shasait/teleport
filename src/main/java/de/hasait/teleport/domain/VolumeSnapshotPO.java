@@ -18,7 +18,6 @@ package de.hasait.teleport.domain;
 
 import de.hasait.common.domain.PersistantObject;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -27,6 +26,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
@@ -45,8 +46,16 @@ public final class VolumeSnapshotPO implements PersistantObject, HasVolume {
     @JoinColumn(name = "VOLUME_ID", nullable = false)
     private VolumePO volume;
 
-    @Embedded
-    private SnapshotData data;
+    @Size(min = 1, max = 128)
+    @NotNull
+    @Column(name = "NAME")
+    private String name;
+
+    @Column(name = "CREATION")
+    private LocalDateTime creation;
+
+    @Column(name = "CONSISTENT")
+    private boolean consistent;
 
     @Min(0)
     @Column(name = "USED_BYTES", nullable = false)
@@ -55,9 +64,11 @@ public final class VolumeSnapshotPO implements PersistantObject, HasVolume {
     public VolumeSnapshotPO() {
     }
 
-    public VolumeSnapshotPO(VolumePO volume, String name, long usedBytes, LocalDateTime creation) {
+    public VolumeSnapshotPO(VolumePO volume, String name, LocalDateTime creation, boolean consistent, long usedBytes) {
         this.volume = volume;
-        this.data = new SnapshotData(name, creation);
+        this.name = name;
+        this.creation = creation;
+        this.consistent = consistent;
         this.usedBytes = usedBytes;
 
         volume.getSnapshots().add(this);
@@ -90,19 +101,36 @@ public final class VolumeSnapshotPO implements PersistantObject, HasVolume {
         this.volume = volume;
     }
 
-    public SnapshotData getData() {
-        return data;
+    public @Size(min = 1, max = 128) @NotNull String getName() {
+        return name;
     }
 
-    public void setData(SnapshotData data) {
-        this.data = data;
+    public void setName(@Size(min = 1, max = 128) @NotNull String name) {
+        this.name = name;
     }
 
+    public LocalDateTime getCreation() {
+        return creation;
+    }
+
+    public void setCreation(LocalDateTime creation) {
+        this.creation = creation;
+    }
+
+    public boolean isConsistent() {
+        return consistent;
+    }
+
+    public void setConsistent(boolean consistent) {
+        this.consistent = consistent;
+    }
+
+    @Min(0)
     public long getUsedBytes() {
         return usedBytes;
     }
 
-    public void setUsedBytes(long usedBytes) {
+    public void setUsedBytes(@Min(0) long usedBytes) {
         this.usedBytes = usedBytes;
     }
 

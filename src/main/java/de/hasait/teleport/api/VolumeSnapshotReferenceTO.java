@@ -18,20 +18,30 @@ package de.hasait.teleport.api;
 
 import java.io.Serializable;
 
-public class VmCreateVolumeTO implements Serializable {
+public class VolumeSnapshotReferenceTO implements Serializable {
 
-    private String dev;
+    private VolumeReferenceTO volume;
 
     private String name;
 
-    private Long sizeBytes;
-
-    public String getDev() {
-        return dev;
+    public VolumeSnapshotReferenceTO() {
     }
 
-    public void setDev(String dev) {
-        this.dev = dev;
+    public VolumeSnapshotReferenceTO(VolumeReferenceTO volume, String name) {
+        this.volume = volume;
+        this.name = name;
+    }
+
+    public VolumeSnapshotReferenceTO(String hostName, String storageName, String volumeName, String name) {
+        this(new VolumeReferenceTO(hostName, storageName, volumeName), name);
+    }
+
+    public VolumeReferenceTO getVolume() {
+        return volume;
+    }
+
+    public void setVolume(VolumeReferenceTO volume) {
+        this.volume = volume;
     }
 
     public String getName() {
@@ -40,14 +50,6 @@ public class VmCreateVolumeTO implements Serializable {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Long getSizeBytes() {
-        return sizeBytes;
-    }
-
-    public void setSizeBytes(Long sizeBytes) {
-        this.sizeBytes = sizeBytes;
     }
 
 }

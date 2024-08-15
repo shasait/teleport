@@ -18,30 +18,24 @@ package de.hasait.teleport.api;
 
 import java.io.Serializable;
 
-public class HypervisorReferenceTO implements Serializable {
+public class VolumeTO implements Serializable {
 
-    private HostReferenceTO host;
+    private StorageReferenceTO storage;
 
     private String name;
 
-    public HypervisorReferenceTO() {
+    private VolumeState state;
+
+    private long sizeBytes;
+
+    private long usedBytes;
+
+    public StorageReferenceTO getStorage() {
+        return storage;
     }
 
-    public HypervisorReferenceTO(HostReferenceTO host, String name) {
-        this.host = host;
-        this.name = name;
-    }
-
-    public HypervisorReferenceTO(String hostName, String name) {
-        this(new HostReferenceTO(hostName), name);
-    }
-
-    public HostReferenceTO getHost() {
-        return host;
-    }
-
-    public void setHost(HostReferenceTO host) {
-        this.host = host;
+    public void setStorage(StorageReferenceTO storage) {
+        this.storage = storage;
     }
 
     public String getName() {
@@ -50,6 +44,30 @@ public class HypervisorReferenceTO implements Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public VolumeState getState() {
+        return state;
+    }
+
+    public void setState(VolumeState state) {
+        this.state = state;
+    }
+
+    public long getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public void setSizeBytes(long sizeBytes) {
+        this.sizeBytes = sizeBytes;
+    }
+
+    public long getUsedBytes() {
+        return usedBytes;
+    }
+
+    public void setUsedBytes(long usedBytes) {
+        this.usedBytes = usedBytes;
     }
 
 }

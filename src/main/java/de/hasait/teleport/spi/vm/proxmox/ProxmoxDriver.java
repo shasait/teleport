@@ -20,8 +20,11 @@ import com.google.gson.Gson;
 import de.hasait.common.service.AbstractRefreshableDriver;
 import de.hasait.common.util.cli.CliExecutor;
 import de.hasait.teleport.CliConfig;
+import de.hasait.teleport.api.VmCreateNetIfTO;
 import de.hasait.teleport.api.VmCreateTO;
 import de.hasait.teleport.api.VmState;
+import de.hasait.teleport.api.VolumeAttachmentCreateTO;
+import de.hasait.teleport.api.VolumeCreateTO;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
@@ -29,10 +32,10 @@ import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeRepository;
+import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -50,13 +53,15 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
     private final CliConfig cliConfig;
     private final VolumeRepository volumeRepository;
     private final VirtualMachineRepository virtualMachineRepository;
+    private final StorageService storageService;
 
-    public ProxmoxDriver(@Autowired CliConfig cliConfig, VolumeRepository volumeRepository, VirtualMachineRepository virtualMachineRepository) {
+    public ProxmoxDriver(CliConfig cliConfig, VolumeRepository volumeRepository, VirtualMachineRepository virtualMachineRepository, StorageService storageService) {
         super("proxmox", "Proxmox Hypervisor Driver", null);
 
         this.cliConfig = cliConfig;
         this.volumeRepository = volumeRepository;
         this.virtualMachineRepository = virtualMachineRepository;
+        this.storageService = storageService;
     }
 
     @Override
@@ -71,8 +76,26 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
     }
 
     @Override
-    public void create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
+    public VirtualMachinePO create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
+        boolean dryMode;
+        if (runInstallation) {
+            // TODO implement
+            throw new RuntimeException("NYI");
+        } else {
+            dryMode = qmCreate(hypervisor, config);
+        }
 
+        if (dryMode) {
+            new VirtualMachinePO(hypervisor, config.getName(), VmState.SHUTOFF);
+        }
+
+        log.info("VM {} created", config.getName());
+
+        if (!dryMode) {
+            refresh(hypervisor);
+        }
+
+        return hypervisor.findVirtualMachineByName(config.getName()).orElseThrow();
     }
 
     @Override
@@ -237,11 +260,21 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
         while (true) {
             i++;
             tdevletter++;
-            String scsiValue = qmConfig.get("scsi" + i);
-            if (scsiValue == null) {
+            String tdevPrefix = null;
+            String vaType = null;
+            String vaValue = null;
+            for (var e : Map.of("virtio", "vd", "scsi", "sd", "ide", "hd").entrySet()) {
+                if (qmConfig.containsKey(e.getKey() + i)) {
+                    vaType = e.getKey();
+                    tdevPrefix = e.getValue();
+                    vaValue = qmConfig.get(e.getKey() + i);
+                    break;
+                }
+            }
+            if (vaValue == null) {
                 break;
             }
-            String[] split = scsiValue.split("[,:]");
+            String[] split = vaValue.split("[,:]");
             String storageName = split[0];
             String volumeName = split[1];
 
@@ -255,21 +288,91 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
                 continue;
             }
 
-            String tdev = "sd" + tdevletter;
+            String tdev = tdevPrefix + tdevletter;
 
             VolumeAttachmentPO existingVolumeAttachment = virtualMachine.findVolumeAttachmentByDev(tdev).orElse(null);
             VolumeAttachmentPO volumeAttachment;
             if (existingVolumeAttachment != null) {
                 volumeAttachment = existingVolumeAttachment;
+                volumeAttachment.setType(vaType);
                 volumeAttachment.setVolume(volume);
             } else {
-                volumeAttachment = new VolumeAttachmentPO(virtualMachine, tdev, volume);
+                volumeAttachment = new VolumeAttachmentPO(virtualMachine, vaType, tdev, volume);
             }
 
             volumeAttachments.add(volumeAttachment);
         }
 
         virtualMachine.getVolumeAttachments().retainAll(volumeAttachments);
+        
+        // TODO netif
+    }
+
+
+    private boolean qmCreate(HypervisorPO hypervisor, VmCreateTO config) {
+        CliExecutor exe = cliConfig.createCliConnector(hypervisor);
+
+        String hvid = determineNextFreeVmId();
+
+        List<String> command = new ArrayList<>();
+        command.add("qm");
+        command.add("create");
+        command.add(hvid);
+        command.addAll(List.of("--name", config.getName()));
+        command.addAll(List.of("--ostype", "l26")); // win10
+        command.addAll(List.of("--bios", "seabios"));
+        command.addAll(List.of("--start", "0"));
+        command.addAll(List.of("--sockets", "1"));
+        command.addAll(List.of("--cores", "" + config.getCores()));
+        if (config.isMemHugePages()) {
+            command.addAll(List.of("--hugepages", "any"));
+        }
+        command.addAll(List.of("--memory", "" + config.getMemMb()));
+
+        int vaIndex = 0;
+        for (VolumeAttachmentCreateTO vaConfig : config.getVolumeAttachments()) {
+            VolumeCreateTO vConfig = vaConfig.getVolume();
+            vConfig.setName(createVolumeName(hvid, vaIndex));
+            VolumePO volume = storageService.createVolume(hypervisor.getHost(), vConfig);
+            String qmVolRef = volume.getStorage().getName() + ":" + volume.getName();
+            command.addAll(List.of("--" + vaConfig.getType() + vaIndex, String.join(",", List.of(qmVolRef, "discard=on"))));
+            vaIndex++;
+        }
+
+        int niIndex = 0;
+        for (VmCreateNetIfTO niConfig : config.getNetworkInterfaces()) {
+            List<String> niOptions = new ArrayList<>();
+            niOptions.add(niConfig.getModel() + "=" + niConfig.getMac());
+            niOptions.add("bridge=vmbr0");
+            if (niConfig.getVlan() != null) {
+                if (niConfig.isTrunk()) {
+                    niOptions.add("trunks=" + niConfig.getVlan());
+                } else {
+                    niOptions.add("tag=" + niConfig.getVlan());
+                }
+            }
+            command.addAll(List.of("--net" + niIndex, String.join(",", niOptions)));
+            niIndex++;
+        }
+
+        boolean dryMode = !exe.executeAndWaitExit0(command, 1, TimeUnit.MINUTES, true);
+        return dryMode;
+    }
+
+    private String determineNextFreeVmId() {
+        long currentVmid = 100;
+        while (currentVmid < 999999999) {
+            String hvid = "" + currentVmid;
+            if (virtualMachineRepository.findByHvid(hvid).isEmpty()) {
+                return hvid;
+            }
+            currentVmid++;
+        }
+        throw new RuntimeException("No free vmid");
+    }
+
+    private String createVolumeName(String hvid, int volumeNumber) {
+        return "vm-" + hvid + "-disk-" + volumeNumber;
     }
 
 }

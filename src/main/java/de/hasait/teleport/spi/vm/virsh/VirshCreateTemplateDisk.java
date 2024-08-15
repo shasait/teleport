@@ -14,27 +14,11 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.api;
+package de.hasait.teleport.spi.vm.virsh;
 
-import java.io.Serializable;
+public class VirshCreateTemplateDisk {
 
-public class HostReferenceTO implements Serializable {
-
-    private String name;
-
-    public HostReferenceTO() {
-    }
-
-    public HostReferenceTO(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String srcDev;
+    public String tgtDev;
 
 }

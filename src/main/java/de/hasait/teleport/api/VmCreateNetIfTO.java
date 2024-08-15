@@ -26,6 +26,7 @@ public class VmCreateNetIfTO implements Serializable {
     private String ipv4;
     private String ipv6;
     private Integer vlan;
+    private boolean trunk;
 
     public String getModel() {
         return model;
@@ -73,6 +74,14 @@ public class VmCreateNetIfTO implements Serializable {
 
     public void setVlan(Integer vlan) {
         this.vlan = vlan;
+    }
+
+    public boolean isTrunk() {
+        return trunk;
+    }
+
+    public void setTrunk(boolean trunk) {
+        this.trunk = trunk;
     }
 
 }

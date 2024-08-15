@@ -14,30 +14,10 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service;
+package de.hasait.teleport.spi.vm.virsh;
 
-import java.io.Serializable;
+public class VirshCreateTemplateCpu {
 
-public class VolumeTO implements Serializable {
-
-    private String name;
-
-    private long sizeBytes;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getSizeBytes() {
-        return sizeBytes;
-    }
-
-    public void setSizeBytes(long sizeBytes) {
-        this.sizeBytes = sizeBytes;
-    }
+    public String topoextPolicy;
 
 }

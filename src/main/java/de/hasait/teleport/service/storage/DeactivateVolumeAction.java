@@ -14,28 +14,26 @@
  * limitations under the License.
  */
 
-package de.hasait.teleport.service.hv;
+package de.hasait.teleport.service.storage;
 
-import de.hasait.teleport.api.VirtualMachineReferenceTO;
+import de.hasait.teleport.api.VolumeReferenceTO;
 import de.hasait.teleport.service.action.AbstractAction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
-public class StartVmAction extends AbstractAction<Void> {
+public class DeactivateVolumeAction extends AbstractAction<Void> {
 
-    private final VirtualMachineReferenceTO vm;
+    private final VolumeReferenceTO volume;
 
-    public StartVmAction(String hostName, String hvName, String vmName) {
-        super("Start VM " + hostName + "/" + hvName + "/" + vmName);
+    public DeactivateVolumeAction(VolumeReferenceTO volume) {
+        super("Deactivate volume " + volume);
 
-        this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
-
-        addUiBinding("hostName=" + hostName);
+        this.volume = volume;
     }
 
     @Override
     public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
-        applicationContext.getBean(HypervisorService.class).startVm(vm);
+        applicationContext.getBean(StorageService.class).deactivateVolume(volume);
         return null;
     }
 

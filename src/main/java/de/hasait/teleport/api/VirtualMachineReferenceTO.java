@@ -24,6 +24,18 @@ public class VirtualMachineReferenceTO implements Serializable {
 
     private String name;
 
+    public VirtualMachineReferenceTO() {
+    }
+
+    public VirtualMachineReferenceTO(HypervisorReferenceTO hypervisor, String name) {
+        this.hypervisor = hypervisor;
+        this.name = name;
+    }
+
+    public VirtualMachineReferenceTO(String hostName, String hvName, String name) {
+        this(new HypervisorReferenceTO(hostName, hvName), name);
+    }
+
     public HypervisorReferenceTO getHypervisor() {
         return hypervisor;
     }

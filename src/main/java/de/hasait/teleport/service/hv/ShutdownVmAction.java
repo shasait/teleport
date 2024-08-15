@@ -16,29 +16,26 @@
 
 package de.hasait.teleport.service.hv;
 
+import de.hasait.teleport.api.VirtualMachineReferenceTO;
 import de.hasait.teleport.service.action.AbstractAction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
 public class ShutdownVmAction extends AbstractAction<Void> {
 
-    private final String hostName;
-    private final String hvName;
-    private final String vmName;
+    private final VirtualMachineReferenceTO vm;
 
     public ShutdownVmAction(String hostName, String hvName, String vmName) {
         super("Shutdown VM " + hostName + "/" + hvName + "/" + vmName);
 
-        this.hostName = hostName;
-        this.hvName = hvName;
-        this.vmName = vmName;
+        this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
 
         addUiBinding("hostName=" + hostName);
     }
 
     @Override
     public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
-        applicationContext.getBean(HypervisorService.class).shutdownVm(hostName, hvName, vmName);
+        applicationContext.getBean(HypervisorService.class).shutdownVm(vm);
         return null;
     }
 

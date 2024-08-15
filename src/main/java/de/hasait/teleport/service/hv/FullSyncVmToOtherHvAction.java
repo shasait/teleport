@@ -16,30 +16,28 @@
 
 package de.hasait.teleport.service.hv;
 
+import de.hasait.teleport.api.HostReferenceTO;
+import de.hasait.teleport.api.VirtualMachineReferenceTO;
 import de.hasait.teleport.service.action.AbstractAction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
 public class FullSyncVmToOtherHvAction extends AbstractAction<Void> {
 
-    private final String srcHostName;
-    private final String srcHvName;
-    private final String srcVmName;
+    private final VirtualMachineReferenceTO srcVm;
 
-    private final String tgtHostName;
+    private final HostReferenceTO tgtHost;
 
     public FullSyncVmToOtherHvAction(String srcHostName, String srcHvName, String srcVmName, String tgtHostName) {
         super("Full Sync VM " + srcHostName + "/" + srcHvName + "/" + srcVmName + " to " + tgtHostName);
 
-        this.srcHostName = srcHostName;
-        this.srcHvName = srcHvName;
-        this.srcVmName = srcVmName;
-        this.tgtHostName = tgtHostName;
+        this.srcVm = new VirtualMachineReferenceTO(srcHostName, srcHvName, srcVmName);
+        this.tgtHost = new HostReferenceTO(tgtHostName);
     }
 
     @Override
     public Void execute(ApplicationContext applicationContext, TransactionStatus transactionStatus) {
-        applicationContext.getBean(HypervisorService.class).fullSyncVmToOtherHv(srcHostName, srcHvName, srcVmName, tgtHostName);
+        applicationContext.getBean(HypervisorService.class).fullSyncVmToOtherHv(srcVm, tgtHost);
         return null;
     }
 
