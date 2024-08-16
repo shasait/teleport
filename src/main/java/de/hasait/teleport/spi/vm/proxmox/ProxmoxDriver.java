@@ -26,6 +26,8 @@ import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.api.VolumeAttachmentCreateTO;
 import de.hasait.teleport.api.VolumeCreateTO;
 import de.hasait.teleport.domain.HypervisorPO;
+import de.hasait.teleport.domain.NetworkInterfacePO;
+import de.hasait.teleport.domain.NetworkPO;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VirtualMachineRepository;
@@ -39,11 +41,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, ProxmoxDriverConfig> implements HypervisorDriver {
@@ -254,20 +258,20 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
 
         Set<VolumeAttachmentPO> volumeAttachments = new HashSet<>();
 
-        int i = -1;
+        int vaIndex = -1;
         char tdevletter = 'a';
         tdevletter--;
         while (true) {
-            i++;
+            vaIndex++;
             tdevletter++;
             String tdevPrefix = null;
             String vaType = null;
             String vaValue = null;
             for (var e : Map.of("virtio", "vd", "scsi", "sd", "ide", "hd").entrySet()) {
-                if (qmConfig.containsKey(e.getKey() + i)) {
+                if (qmConfig.containsKey(e.getKey() + vaIndex)) {
                     vaType = e.getKey();
                     tdevPrefix = e.getValue();
-                    vaValue = qmConfig.get(e.getKey() + i);
+                    vaValue = qmConfig.get(e.getKey() + vaIndex);
                     break;
                 }
             }
@@ -304,8 +308,52 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
         }
 
         virtualMachine.getVolumeAttachments().retainAll(volumeAttachments);
-        
-        // TODO netif
+
+        Set<NetworkInterfacePO> networkInterfaces = new HashSet<>();
+
+        int niIndex = -1;
+        while (true) {
+            niIndex++;
+            String iname = "eth" + niIndex;
+
+            String niValue = qmConfig.get("net" + niIndex);
+            if (niValue == null) {
+                break;
+            }
+
+            Map<String, String> niConfig = Arrays.stream(niValue.split(",")).map(it -> it.split("=")).collect(Collectors.toMap(it -> it[0], it -> it.length >= 2 ? it[1] : ""));
+            String mac;
+            String type;
+            if (niConfig.containsKey("virtio")) {
+                mac = niConfig.get("virtio");
+                type = "virtio";
+            } else {
+                continue;
+            }
+
+            if (!niConfig.containsKey("tag")) {
+                continue;
+            }
+            int vlan = Integer.parseInt(niConfig.get("tag"));
+
+            NetworkPO network = virtualMachine.obtainLocation().findNetworkByVlan(vlan).orElse(null);
+            if (network == null) {
+                continue;
+            }
+
+            NetworkInterfacePO existingNetworkInterface = virtualMachine.findNetworkInterfaceByMac(mac).orElse(null);
+            NetworkInterfacePO networkInterface;
+            if (existingNetworkInterface != null) {
+                networkInterface = existingNetworkInterface;
+                networkInterface.setModel(type);
+            } else {
+                networkInterface = new NetworkInterfacePO(virtualMachine, iname, type, mac, network);
+            }
+
+            networkInterfaces.add(networkInterface);
+        }
+
+        virtualMachine.getNetworkInterfaces().retainAll(networkInterfaces);
     }
 
 
