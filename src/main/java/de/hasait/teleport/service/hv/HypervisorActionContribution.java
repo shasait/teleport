@@ -29,8 +29,11 @@ public class HypervisorActionContribution implements ActionContribution {
 
     private final VirtualMachineRepository virtualMachineRepository;
 
-    public HypervisorActionContribution(VirtualMachineRepository virtualMachineRepository) {
+    private final HypervisorService hypervisorService;
+
+    public HypervisorActionContribution(VirtualMachineRepository virtualMachineRepository, HypervisorService hypervisorService) {
         this.virtualMachineRepository = virtualMachineRepository;
+        this.hypervisorService = hypervisorService;
     }
 
     @Override
@@ -44,9 +47,9 @@ public class HypervisorActionContribution implements ActionContribution {
 
         List<VirtualMachinePO> vms = virtualMachineRepository.findAll();
         for (var vm : vms) {
-            if (vm.stateIsShutOff()) {
+            if (hypervisorService.canStartVm(vm).isValidWithEffect()) {
                 actionList.add(new StartVmAction(vm.obtainHost().getName(), vm.obtainHypervisor().getName(), vm.getName()));
-            } else {
+            } else if (hypervisorService.canShutdownVm(vm).isValidWithEffect()) {
                 actionList.add(new ShutdownVmAction(vm.obtainHost().getName(), vm.obtainHypervisor().getName(), vm.getName()));
                 actionList.add(new KillVmAction(vm.obtainHost().getName(), vm.obtainHypervisor().getName(), vm.getName()));
             }

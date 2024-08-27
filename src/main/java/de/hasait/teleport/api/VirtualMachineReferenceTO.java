@@ -52,4 +52,8 @@ public class VirtualMachineReferenceTO implements Serializable {
         this.name = name;
     }
 
+    public String toFqName() {
+        return hypervisor.toFqName() + "/" + name;
+    }
+
 }

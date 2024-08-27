@@ -61,4 +61,8 @@ public interface StorageService extends StorageApi, RefreshableService<StoragePO
 
     boolean fullSync(VolumeSnapshotPO srcVolumeSnapshot, StoragePO tgtStorage, String volumeName, boolean replaceExisting);
 
+    CanResult canIncrSync(VolumeSnapshotPO srcVolumeSnapshot, VolumeSnapshotPO tgtVolumeSnapshot);
+
+    boolean incrSync(VolumeSnapshotPO srcVolumeSnapshot, VolumeSnapshotPO tgtVolumeSnapshot);
+
 }

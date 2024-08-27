@@ -52,4 +52,8 @@ public class VolumeSnapshotReferenceTO implements Serializable {
         this.name = name;
     }
 
+    public String toFqName() {
+        return volume.toFqName() + "@" + name;
+    }
+
 }

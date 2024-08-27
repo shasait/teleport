@@ -19,6 +19,7 @@ package de.hasait.teleport.service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public final class CanResult {
 
@@ -101,6 +102,13 @@ public final class CanResult {
         }
         if (!other.valid) {
             return other;
+        }
+        return this;
+    }
+
+    public CanResult merge(Function<CanResult, CanResult> map) {
+        if (hasNoEffect || valid) {
+            return map.apply(this);
         }
         return this;
     }

@@ -24,7 +24,9 @@ public class VolumeAttachmentCreateTO implements Serializable {
 
     private String dev;
 
-    private VolumeCreateTO volume;
+    private String storageName;
+
+    private long sizeBytes;
 
     public String getType() {
         return type;
@@ -42,12 +44,20 @@ public class VolumeAttachmentCreateTO implements Serializable {
         this.dev = dev;
     }
 
-    public VolumeCreateTO getVolume() {
-        return volume;
+    public String getStorageName() {
+        return storageName;
     }
 
-    public void setVolume(VolumeCreateTO volume) {
-        this.volume = volume;
+    public void setStorageName(String storageName) {
+        this.storageName = storageName;
+    }
+
+    public long getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public void setSizeBytes(long sizeBytes) {
+        this.sizeBytes = sizeBytes;
     }
 
 }

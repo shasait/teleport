@@ -197,4 +197,8 @@ public class StoragePO implements DriverInstancePO, HasStorage {
         return getVolumes().stream().filter(it -> it.getName().equals(name)).findAny();
     }
 
+    public String toFqName() {
+        return host.toFqName() + "/" + name;
+    }
+
 }

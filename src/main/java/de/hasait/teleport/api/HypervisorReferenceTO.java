@@ -52,4 +52,8 @@ public class HypervisorReferenceTO implements Serializable {
         this.name = name;
     }
 
+    public String toFqName() {
+        return host.toFqName() + "/" + name;
+    }
+
 }

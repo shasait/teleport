@@ -52,4 +52,8 @@ public class StorageReferenceTO implements Serializable {
         this.name = name;
     }
 
+    public String toFqName() {
+        return host.toFqName() + "/" + name;
+    }
+
 }

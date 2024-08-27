@@ -202,4 +202,8 @@ public final class VolumePO implements PersistantObject, HasVolume {
         return stateIsDirty() || stateIsInactive();
     }
 
+    public String toFqName() {
+        return storage.toFqName() + "/" + name;
+    }
+
 }

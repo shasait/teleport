@@ -146,4 +146,8 @@ public class HostPO implements PersistantObject, HasHost {
         return this;
     }
 
+    public String toFqName() {
+        return name;
+    }
+
 }

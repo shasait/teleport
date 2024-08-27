@@ -50,12 +50,16 @@ public interface StorageApi {
 
     // Sync
 
-    CanResult canTakeSnapshot(String snapshotName, VolumeReferenceTO... volumes);
+    CanResult canTakeSnapshot(String snapshotName, VolumeReferenceTO... volumeTOs);
 
-    boolean takeSnapshot(String snapshotName, VolumeReferenceTO... volumes);
+    boolean takeSnapshot(String snapshotName, VolumeReferenceTO... volumeTOs);
 
     CanResult canFullSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeReferenceTO tgtVolumeTO, boolean replaceExisting);
 
     boolean fullSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeReferenceTO tgtVolumeTO, boolean replaceExisting);
+
+    CanResult canIncrSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeSnapshotReferenceTO tgtVolumeSnapshotTO);
+
+    boolean incrSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeSnapshotReferenceTO tgtVolumeSnapshotTO);
 
 }

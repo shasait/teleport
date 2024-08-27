@@ -37,4 +37,8 @@ public class HostReferenceTO implements Serializable {
         this.name = name;
     }
 
+    public String toFqName() {
+        return name;
+    }
+
 }

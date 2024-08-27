@@ -139,4 +139,8 @@ public final class VolumeSnapshotPO implements PersistantObject, HasVolume {
         return volume;
     }
 
+    public String toFqName() {
+        return volume.toFqName() + "@" + name;
+    }
+
 }

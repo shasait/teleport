@@ -36,12 +36,22 @@ public interface VirtualMachineRepository extends SearchableRepository<VirtualMa
     long searchCount(String search);
 
     @Query("""
-            SELECT srcVm, tgtHost.name FROM VirtualMachinePO srcVm, HostPO tgtHost
+            SELECT srcVm, tgtHost.name
+            FROM VirtualMachinePO srcVm, HostPO tgtHost
             WHERE srcVm.hypervisor.host != tgtHost
             AND NOT EXISTS(SELECT 1 FROM VirtualMachinePO tgtVm WHERE srcVm.name = tgtVm.name AND tgtVm.hypervisor.host = tgtHost)
             """)
     List<Object[]> findFullSyncVms();
 
     List<VirtualMachinePO> findByHvid(String hvid);
+
+    @Query("""
+            SELECT vm
+            FROM VirtualMachinePO vm
+            WHERE vm.hypervisor.host.name != :hostName
+            AND vm.hypervisor.name = :hvName
+            AND vm.name = :vmName
+            """)
+    List<VirtualMachinePO> findOthers(String hostName, String hvName, String vmName);
 
 }

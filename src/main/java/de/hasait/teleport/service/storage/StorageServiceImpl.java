@@ -25,29 +25,28 @@ import de.hasait.teleport.api.VolumeSnapshotReferenceTO;
 import de.hasait.teleport.api.VolumeTO;
 import de.hasait.teleport.domain.HasStorage;
 import de.hasait.teleport.domain.HostPO;
-import de.hasait.teleport.domain.HostRepository;
 import de.hasait.teleport.domain.StoragePO;
 import de.hasait.teleport.domain.StorageRepository;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.domain.VolumeSnapshotPO;
 import de.hasait.teleport.service.CanResult;
+import de.hasait.teleport.service.mapper.AllMapper;
 import de.hasait.teleport.spi.storage.StorageDriver;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class StorageServiceImpl extends AbstractRefreshableDriverService<StorageDriver, StoragePO, StorageRepository> implements StorageService {
 
     public static final int STORAGE_REFRESH_PRIORITY = 10000;
 
-    private final HostRepository hostRepository;
+    private final AllMapper allMapper;
 
-    public StorageServiceImpl(StorageRepository repository, StorageDriver[] drivers, HostRepository hostRepository) {
+    public StorageServiceImpl(StorageRepository repository, StorageDriver[] drivers, AllMapper allMapper) {
         super(StoragePO.class, repository, drivers);
-        this.hostRepository = hostRepository;
+        this.allMapper = allMapper;
     }
 
     @Override
@@ -62,29 +61,48 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public CanResult canCreateVolume(HostReferenceTO hostReferenceTO, VolumeCreateTO volumeCreateTO) {
-        return canCreateVolume(findHost(hostReferenceTO).orElseThrow(), volumeCreateTO);
+        return allMapper.canFindHost(hostReferenceTO).merge(canResult -> canCreateVolume(canResult.getContextNotNull(HostPO.class), volumeCreateTO));
     }
 
     @Override
     public CanResult canCreateVolume(HostPO host, VolumeCreateTO volumeCreateTO) {
-        return null; // TODO implement
+        CanResult canFindStorage = allMapper.canFindStorage(new StorageReferenceTO(host.getName(), volumeCreateTO.getStorageName()));
+        if (!canFindStorage.isValid()) {
+            return canFindStorage;
+        }
+
+        StoragePO storage = canFindStorage.getContextNotNull(StoragePO.class);
+        return storage.findVolumeByName(volumeCreateTO.getName()) //
+                .map(volumePO -> CanResult.invalid("Volume " + volumePO.toFqName() + " already exists")) //
+                .orElseGet(() -> CanResult.valid().putContext(StoragePO.class, storage)) //
+                ;
     }
 
     @Override
     public VolumeTO createVolume(HostReferenceTO hostReferenceTO, VolumeCreateTO volumeCreateTO) {
-        VolumePO volume = createVolume(findHost(hostReferenceTO).orElseThrow(), volumeCreateTO);
-        return null; // TODO mapper
+        CanResult canResult = canCreateVolume(hostReferenceTO, volumeCreateTO);
+        VolumePO volume = createVolume(canResult, volumeCreateTO);
+        return allMapper.mapToVolumeTO(volume);
     }
 
     @Override
     public VolumePO createVolume(HostPO host, VolumeCreateTO volumeCreateTO) {
-        StoragePO storage = host.findStorageByName(volumeCreateTO.getStorageName()).orElseThrow();
+        CanResult canResult = canCreateVolume(host, volumeCreateTO);
+        return createVolume(canResult, volumeCreateTO);
+    }
+
+    private VolumePO createVolume(CanResult canResult, VolumeCreateTO volumeCreateTO) {
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return canResult.getContextNotNull(VolumePO.class);
+        }
+
+        StoragePO storage = canResult.getContextNotNull(StoragePO.class);
         return getProviderByIdNotNull(storage.getDriver()).create(storage, volumeCreateTO);
     }
 
     @Override
     public CanResult canActivateVolume(VolumeReferenceTO volumeReferenceTO) {
-        return canActivateVolume(findVolume(volumeReferenceTO).orElseThrow());
+        return allMapper.canFindVolume(volumeReferenceTO).merge(canResult -> canActivateVolume(canResult.getContextNotNull(VolumePO.class)));
     }
 
     @Override
@@ -93,12 +111,19 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
             return CanResult.hasNoEffect("Volume " + volume + " already active");
         }
 
-        return CanResult.valid();
+        return CanResult.valid().putContext(VolumePO.class, volume);
     }
 
     @Override
     public boolean activateVolume(VolumeReferenceTO volumeReferenceTO) {
-        return activateVolume(findVolume(volumeReferenceTO).orElseThrow());
+        CanResult canResult = canActivateVolume(volumeReferenceTO);
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return false;
+        }
+
+        VolumePO volume = canResult.getContextNotNull(VolumePO.class);
+        getProviderByIdNotNull(volume).activate(volume);
+        return true;
     }
 
     @Override
@@ -114,7 +139,7 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public CanResult canDeactivateVolume(VolumeReferenceTO volumeReferenceTO) {
-        return canDeactivateVolume(findVolume(volumeReferenceTO).orElseThrow());
+        return allMapper.canFindVolume(volumeReferenceTO).merge(canResult -> canDeactivateVolume(canResult.getContextNotNull(VolumePO.class)));
     }
 
     @Override
@@ -127,12 +152,19 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
             return CanResult.invalid("Volume " + volume + " in use by VM");
         }
 
-        return CanResult.valid();
+        return CanResult.valid().putContext(VolumePO.class, volume);
     }
 
     @Override
     public boolean deactivateVolume(VolumeReferenceTO volumeReferenceTO) {
-        return deactivateVolume(findVolume(volumeReferenceTO).orElseThrow());
+        CanResult canResult = canDeactivateVolume(volumeReferenceTO);
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return false;
+        }
+
+        VolumePO volume = canResult.getContextNotNull(VolumePO.class);
+        getProviderByIdNotNull(volume).deactivate(volume);
+        return true;
     }
 
     @Override
@@ -168,12 +200,22 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public VolumeTO getVolume(VolumeReferenceTO volumeReferenceTO) {
-        return null; // TODO implement
+        CanResult canResult = allMapper.canFindVolume(volumeReferenceTO);
+        canResult.ensureValidAndReturnHasNoEffect();
+        return allMapper.mapToVolumeTO(canResult.getContextNotNull(VolumePO.class));
     }
 
     @Override
-    public CanResult canTakeSnapshot(String snapshotName, VolumeReferenceTO... volumes) {
-        return canTakeSnapshot(snapshotName, Arrays.stream(volumes).map(v -> findVolume(v).orElseThrow()).toArray(VolumePO[]::new));
+    public CanResult canTakeSnapshot(String snapshotName, VolumeReferenceTO... volumeTOs) {
+        List<VolumePO> volumes = new ArrayList<>();
+        for (VolumeReferenceTO volumeTO : volumeTOs) {
+            CanResult canResult = allMapper.canFindVolume(volumeTO);
+            if (!canResult.isValid()) {
+                return canResult;
+            }
+            volumes.add(canResult.getContextNotNull(VolumePO.class));
+        }
+        return canTakeSnapshot(snapshotName, volumes.toArray(VolumePO[]::new));
     }
 
     @Override
@@ -207,12 +249,19 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
             }
         }
 
-        return CanResult.valid().putContext(StoragePO.class, storage);
+        return CanResult.valid().putContext(StoragePO.class, storage).putContext(VolumePO[].class, volumes);
     }
 
     @Override
-    public boolean takeSnapshot(String snapshotName, VolumeReferenceTO... volumes) {
-        return takeSnapshot(snapshotName, Arrays.stream(volumes).map(v -> findVolume(v).orElseThrow()).toArray(VolumePO[]::new));
+    public boolean takeSnapshot(String snapshotName, VolumeReferenceTO... volumeTOs) {
+        CanResult canResult = canTakeSnapshot(snapshotName, volumeTOs);
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return false;
+        }
+
+        StoragePO storage = canResult.getContext(StoragePO.class);
+        getProviderByIdNotNull(storage.getDriver()).takeSnapshot(snapshotName, canResult.getContextNotNull(VolumePO[].class));
+        return true;
     }
 
     @Override
@@ -239,7 +288,7 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public boolean fullSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeReferenceTO tgtVolumeTO, boolean replaceExisting) {
-        return fullSync(findVolumeSnapshot(srcVolumeSnapshotTO).orElseThrow(), findStorage(tgtVolumeTO.getStorage()).orElseThrow(), tgtVolumeTO.getName(), replaceExisting);
+        return fullSync(allMapper.findVolumeSnapshot(srcVolumeSnapshotTO).orElseThrow(), allMapper.findStorage(tgtVolumeTO.getStorage()).orElseThrow(), tgtVolumeTO.getName(), replaceExisting);
     }
 
     @Override
@@ -251,22 +300,6 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
             // TODO generic sync via dd and ssh
             throw new RuntimeException("NYI");
         }
-    }
-
-    private Optional<VolumeSnapshotPO> findVolumeSnapshot(VolumeSnapshotReferenceTO to) {
-        return findVolume(to.getVolume()).flatMap(v -> v.findSnapshotByName(to.getName()));
-    }
-
-    private Optional<VolumePO> findVolume(VolumeReferenceTO to) {
-        return findStorage(to.getStorage()).flatMap(s -> s.findVolumeByName(to.getName()));
-    }
-
-    private Optional<StoragePO> findStorage(StorageReferenceTO to) {
-        return repository.findByHostAndName(to.getHost().getName(), to.getName());
-    }
-
-    private Optional<HostPO> findHost(HostReferenceTO to) {
-        return hostRepository.findByName(to.getName());
     }
 
     private StorageDriver getProviderByIdNotNull(HasStorage hasStorage) {

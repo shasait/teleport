@@ -60,6 +60,8 @@ public interface HypervisorService extends HypervisorApi, RefreshableService<Hyp
 
     boolean deleteVm(VirtualMachinePO virtualMachine);
 
+    CanResult canFullDeleteVm(VirtualMachinePO virtualMachine);
+    
     boolean fullDeleteVm(VirtualMachinePO virtualMachine);
 
 }

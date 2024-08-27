@@ -163,4 +163,8 @@ public class HypervisorPO implements DriverInstancePO, HasHypervisor {
         return this;
     }
 
+    public String toFqName() {
+        return host.toFqName() + "/" + name;
+    }
+
 }

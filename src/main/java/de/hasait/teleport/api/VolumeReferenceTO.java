@@ -52,4 +52,8 @@ public class VolumeReferenceTO implements Serializable {
         this.name = name;
     }
 
+    public String toFqName() {
+        return storage.toFqName() + "/" + name;
+    }
+
 }

@@ -269,4 +269,8 @@ public class VirtualMachinePO implements PersistantObject, HasVirtualMachine {
         return state != VmState.SHUTOFF;
     }
 
+    public String toFqName() {
+        return hypervisor.toFqName() + "/" + name;
+    }
+
 }

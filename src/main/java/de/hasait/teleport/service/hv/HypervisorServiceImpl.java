@@ -24,26 +24,27 @@ import de.hasait.teleport.api.VirtualMachineTO;
 import de.hasait.teleport.api.VmCreateNetIfTO;
 import de.hasait.teleport.api.VmCreateTO;
 import de.hasait.teleport.api.VolumeAttachmentCreateTO;
-import de.hasait.teleport.api.VolumeCreateTO;
 import de.hasait.teleport.api.VolumeReferenceTO;
 import de.hasait.teleport.domain.HasHypervisor;
 import de.hasait.teleport.domain.HostPO;
-import de.hasait.teleport.domain.HostRepository;
 import de.hasait.teleport.domain.HypervisorPO;
 import de.hasait.teleport.domain.HypervisorRepository;
 import de.hasait.teleport.domain.NetworkInterfacePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
+import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
 import de.hasait.teleport.domain.VolumePO;
 import de.hasait.teleport.service.CanResult;
 import de.hasait.teleport.service.SnapshotNameGenerator;
 import de.hasait.teleport.service.action.ActionService;
+import de.hasait.teleport.service.mapper.AllMapper;
 import de.hasait.teleport.service.storage.FullSyncVolumeAction;
 import de.hasait.teleport.service.storage.StorageService;
 import de.hasait.teleport.service.storage.TakeSnapshotAction;
 import de.hasait.teleport.spi.vm.HypervisorDriver;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,62 +54,125 @@ import java.util.stream.Collectors;
 @Service
 public class HypervisorServiceImpl extends AbstractRefreshableDriverService<HypervisorDriver, HypervisorPO, HypervisorRepository> implements HypervisorService {
 
-    private final HostRepository hostRepository;
-    private final StorageService storageService;
+    private final VirtualMachineRepository virtualMachineRepository;
+    private final AllMapper allMapper;
     private final ActionService actionService;
+    private final StorageService storageService;
 
-    public HypervisorServiceImpl(HypervisorRepository repository, HypervisorDriver[] drivers, HostRepository hostRepository, StorageService storageService, ActionService actionService) {
+    public HypervisorServiceImpl(HypervisorRepository repository, HypervisorDriver[] drivers, VirtualMachineRepository virtualMachineRepository, AllMapper allMapper, ActionService actionService, StorageService storageService) {
         super(HypervisorPO.class, repository, drivers);
-        this.hostRepository = hostRepository;
-        this.storageService = storageService;
+        this.virtualMachineRepository = virtualMachineRepository;
+        this.allMapper = allMapper;
         this.actionService = actionService;
+        this.storageService = storageService;
     }
 
     @Override
     public List<HostReferenceTO> canCreateVm(VmCreateTO vmCreateTO) {
-        return List.of(); // TODO implement
+        List<HostReferenceTO> result = new ArrayList<>();
+        for (HypervisorPO hypervisor : repository.findAll()) {
+            if (hypervisor.getName().equals(vmCreateTO.getHypervisorName())) {
+                HostPO host = hypervisor.obtainHost();
+                if (canCreateVm(host, vmCreateTO).isValidWithEffect()) {
+                    result.add(new HostReferenceTO(host.getName()));
+                }
+            }
+        }
+        return result;
     }
 
     @Override
     public CanResult canCreateVm(HostReferenceTO hostReferenceTO, VmCreateTO vmCreateTO) {
-        return null; // TODO implement
+        return allMapper.canFindHost(hostReferenceTO).merge(canResult -> canCreateVm(canResult.getContextNotNull(HostPO.class), vmCreateTO));
     }
 
     @Override
     public CanResult canCreateVm(HostPO host, VmCreateTO vmCreateTO) {
-        return null; // TODO implement
+        CanResult canFindHypervisor = allMapper.canFindHypervisor(new HypervisorReferenceTO(host.getName(), vmCreateTO.getHypervisorName()));
+        if (!canFindHypervisor.isValid()) {
+            return canFindHypervisor;
+        }
+
+        HypervisorPO hypervisor = canFindHypervisor.getContextNotNull(HypervisorPO.class);
+
+        return hypervisor.findVirtualMachineByName(vmCreateTO.getName()) //
+                .map(virtualMachinePO -> CanResult.invalid("VM " + virtualMachinePO.toFqName() + " already exists")) //
+                .orElseGet(() -> CanResult.valid().putContext(HypervisorPO.class, hypervisor)) //
+                ;
     }
 
     @Override
     public VirtualMachineTO createVm(HostReferenceTO hostReferenceTO, VmCreateTO vmCreateTO) {
-        VirtualMachinePO virtualMachine = createVm(findHost(hostReferenceTO).orElseThrow(), vmCreateTO);
-        return null; // TODO mapper
+        CanResult canResult = canCreateVm(hostReferenceTO, vmCreateTO);
+        VirtualMachinePO vm = createVm(canResult, vmCreateTO);
+        return allMapper.mapToVirtualMachineTO(vm);
     }
 
     @Override
     public VirtualMachinePO createVm(HostPO host, VmCreateTO vmCreateTO) {
-        HypervisorPO hypervisor = host.findHypervisorByName(vmCreateTO.getHypervisorName()).orElseThrow();
+        CanResult canResult = canCreateVm(host, vmCreateTO);
+        return createVm(canResult, vmCreateTO);
+    }
+
+    private VirtualMachinePO createVm(CanResult canResult, VmCreateTO vmCreateTO) {
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return canResult.getContextNotNull(VirtualMachinePO.class);
+        }
+
+        HypervisorPO hypervisor = canResult.getContextNotNull(HypervisorPO.class);
         return getProviderByIdNotNull(hypervisor.getDriver()).create(hypervisor, vmCreateTO, false);
     }
 
     @Override
-    public CanResult canStartVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
+    public VirtualMachineTO getVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
         return null; // TODO implement
+    }
+
+    @Override
+    public CanResult canStartVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
+        return allMapper.canFindVm(virtualMachineReferenceTO).merge(canResult -> canStartVm(canResult.getContextNotNull(VirtualMachinePO.class)));
     }
 
     @Override
     public CanResult canStartVm(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        if (virtualMachine.stateIsRunning()) {
+            return CanResult.hasNoEffect("VM " + virtualMachine + " already running");
+        }
+
+        Optional<VirtualMachinePO> otherActive = virtualMachineRepository.findOthers(virtualMachine.obtainHost().getName(), virtualMachine.obtainHypervisor().getName(), virtualMachine.getName()).stream().filter(VirtualMachinePO::stateIsNotShutOff).findAny();
+        if (otherActive.isPresent()) {
+            return CanResult.invalid("VM active on other host: " + otherActive.get());
+        }
+
+        CanResult current = CanResult.valid();
+        for (VolumeAttachmentPO va : virtualMachine.getVolumeAttachments()) {
+            current = current.merge(canResult -> storageService.canActivateVolume(va.getVolume()));
+        }
+        if (current.isValidWithEffect()) {
+            current.putContext(VirtualMachinePO.class, virtualMachine);
+        }
+        return current;
     }
 
     @Override
     public boolean startVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return startVm(findVm(virtualMachineReferenceTO).orElseThrow());
+        CanResult canResult = canStartVm(virtualMachineReferenceTO);
+        return startVm(canResult);
     }
 
     @Override
     public boolean startVm(VirtualMachinePO virtualMachine) {
-        // TODO can
+        CanResult canResult = canStartVm(virtualMachine);
+        return startVm(canResult);
+    }
+
+    private boolean startVm(CanResult canResult) {
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return false;
+        }
+
+        VirtualMachinePO virtualMachine = canResult.getContextNotNull(VirtualMachinePO.class);
+
         for (var va : virtualMachine.getVolumeAttachments()) {
             storageService.activateVolume(va.getVolume());
         }
@@ -118,7 +182,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canShutdownVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return null; // TODO implement
+        return allMapper.canFindVm(virtualMachineReferenceTO).merge(canResult -> canShutdownVm(canResult.getContextNotNull(VirtualMachinePO.class)));
     }
 
     @Override
@@ -128,7 +192,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public boolean shutdownVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return shutdownVm(findVm(virtualMachineReferenceTO).orElseThrow());
+        return shutdownVm(allMapper.findVm(virtualMachineReferenceTO).orElseThrow());
     }
 
     @Override
@@ -148,7 +212,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canKillVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return null; // TODO implement
+        return allMapper.canFindVm(virtualMachineReferenceTO).merge(canResult -> canKillVm(canResult.getContextNotNull(VirtualMachinePO.class)));
     }
 
     @Override
@@ -158,7 +222,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public boolean killVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return killVm(findVm(virtualMachineReferenceTO).orElseThrow());
+        return killVm(allMapper.findVm(virtualMachineReferenceTO).orElseThrow());
     }
 
     @Override
@@ -170,7 +234,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canUpdateVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return null; // TODO implement
+        return allMapper.canFindVm(virtualMachineReferenceTO).merge(canResult -> canUpdateVm(canResult.getContextNotNull(VirtualMachinePO.class)));
     }
 
     @Override
@@ -190,7 +254,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canDeleteVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return null; // TODO implement
+        return allMapper.canFindVm(virtualMachineReferenceTO).merge(canResult -> canDeleteVm(canResult.getContextNotNull(VirtualMachinePO.class)));
     }
 
     @Override
@@ -209,17 +273,12 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
     }
 
     @Override
-    public boolean fullDeleteVm(VirtualMachinePO virtualMachine) {
-        return false; // TODO implement
-    }
-
-    @Override
-    public VirtualMachineTO getVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return null; // TODO implement
-    }
-
-    @Override
     public CanResult canFullDeleteVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
+        return allMapper.canFindVm(virtualMachineReferenceTO).merge(canResult -> canFullDeleteVm(canResult.getContextNotNull(VirtualMachinePO.class)));
+    }
+
+    @Override
+    public CanResult canFullDeleteVm(VirtualMachinePO virtualMachine) {
         return null; // TODO implement
     }
 
@@ -229,8 +288,13 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
     }
 
     @Override
+    public boolean fullDeleteVm(VirtualMachinePO virtualMachine) {
+        return false; // TODO implement
+    }
+
+    @Override
     public void fullSyncVmToOtherHv(VirtualMachineReferenceTO srcVmTO, HostReferenceTO tgtHostTO) {
-        VirtualMachinePO srcVm = findVm(srcVmTO).orElseThrow();
+        VirtualMachinePO srcVm = allMapper.findVm(srcVmTO).orElseThrow();
         HypervisorPO tgtHv = repository.findByHostAndName(tgtHostTO.getName(), srcVmTO.getHypervisor().getName()).orElseThrow();
 
         VirtualMachinePO existingTgtVm = tgtHv.findVirtualMachineByName(srcVm.getName()).orElse(null);
@@ -274,14 +338,12 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
             volumeAttachmentCreateTO.setDev(volumeAttachment.getDev());
 
             VolumePO volume = volumeAttachment.getVolume();
-            VolumeCreateTO volumeCreateTO = new VolumeCreateTO();
-            volumeCreateTO.setStorageName(volume.getStorage().getName());
-            volumeCreateTO.setName(volume.getName());
-            volumeCreateTO.setSizeBytes(volume.getSizeBytes());
+            volumeAttachmentCreateTO.setStorageName(volume.getStorage().getName());
+            volumeAttachmentCreateTO.setSizeBytes(volume.getSizeBytes());
 
-            volumeAttachmentCreateTO.setVolume(volumeCreateTO);
             vmCreateTO.getVolumeAttachments().add(volumeAttachmentCreateTO);
         }
+
         for (NetworkInterfacePO networkInterface : srcVm.getNetworkInterfaces()) {
             VmCreateNetIfTO netIfTO = new VmCreateNetIfTO();
             netIfTO.setModel(networkInterface.getModel());
@@ -295,20 +357,6 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
         }
 
         return vmCreateTO;
-    }
-
-    private Optional<VirtualMachinePO> findVm(VirtualMachineReferenceTO vm) {
-        HypervisorReferenceTO hypervisor = vm.getHypervisor();
-        HostReferenceTO host = hypervisor.getHost();
-        return findVm(host.getName(), hypervisor.getName(), vm.getName());
-    }
-
-    private Optional<VirtualMachinePO> findVm(String hostName, String hvName, String vmName) {
-        return repository.findByHostAndName(hostName, hvName).flatMap(hv -> hv.findVirtualMachineByName(vmName));
-    }
-
-    private Optional<HostPO> findHost(HostReferenceTO to) {
-        return hostRepository.findByName(to.getName());
     }
 
     private HypervisorDriver getProviderByIdNotNull(HasHypervisor hasHypervisor) {
