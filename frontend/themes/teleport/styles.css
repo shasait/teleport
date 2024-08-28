@@ -1,1 +1,33 @@
 @import url('./main-layout.css');
+
+.overviewTable {
+  border: 2px solid #000000;
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+  display: table;
+}
+.overviewTable .overviewTh, .overviewTable .overviewTd {
+  border: 1px solid #000000;
+  padding: 5px 4px;
+}
+.overviewTable .overviewTableBody .overviewTd {
+  font-size: 14px;
+}
+.overviewTable .overviewTableHead {
+  background: #d0d0d0;
+  background: -moz-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #d0d0d0 100%);
+  background: -webkit-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #d0d0d0 100%);
+  background: linear-gradient(to bottom, #dbdbdb 0%, #d3d3d3 66%, #d0d0d0 100%);
+  border-bottom: 2px solid #000000;
+}
+.overviewTable .overviewTableHead .overviewTh {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000000;
+  text-align: left;
+}
+.overviewTr { display: table-row; }
+.overviewTableHead { display: table-header-group;}
+.overviewTableBody { display: table-row-group;}
+.overviewTd, .overviewTh { display: table-cell;}

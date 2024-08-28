@@ -125,7 +125,8 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public VirtualMachineTO getVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return null; // TODO implement
+        VirtualMachinePO virtualMachine = allMapper.findVm(virtualMachineReferenceTO).orElseThrow();
+        return allMapper.mapToVirtualMachineTO(virtualMachine);
     }
 
     @Override
@@ -187,7 +188,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canShutdownVm(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -197,7 +198,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public boolean shutdownVm(String virtualMachineName) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -217,7 +218,7 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canKillVm(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -239,17 +240,17 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canUpdateVm(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean updateVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean updateVm(VirtualMachinePO virtualMachine) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -259,17 +260,17 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canDeleteVm(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean deleteVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean deleteVm(VirtualMachinePO virtualMachine) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -279,17 +280,17 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canFullDeleteVm(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean fullDeleteVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean fullDeleteVm(VirtualMachinePO virtualMachine) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override

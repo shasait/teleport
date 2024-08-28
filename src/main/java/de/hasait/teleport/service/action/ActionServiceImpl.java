@@ -39,19 +39,17 @@ public class ActionServiceImpl implements ActionService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private ApplicationContext applicationContext;
-    private TransactionTemplate transactionTemplate;
-    private final List<ActionContribution> actionContributions;
+    private final ApplicationContext applicationContext;
+    private final TransactionTemplate transactionTemplate;
 
     private final LinkedBlockingQueue<ActionFutureTask<?>> workQueue;
     private final AtomicReference<ActionFutureTask<?>> executingAction;
     private final AtomicBoolean threadShouldRun;
     private final Thread thread;
 
-    public ActionServiceImpl(ApplicationContext applicationContext, TransactionTemplate transactionTemplate, List<ActionContribution> actionContributions) {
+    public ActionServiceImpl(ApplicationContext applicationContext, TransactionTemplate transactionTemplate) {
         this.applicationContext = applicationContext;
         this.transactionTemplate = transactionTemplate;
-        this.actionContributions = actionContributions;
         this.workQueue = new LinkedBlockingQueue<>();
         this.executingAction = new AtomicReference<>();
         this.threadShouldRun = new AtomicBoolean(true);
@@ -123,7 +121,7 @@ public class ActionServiceImpl implements ActionService {
     @Transactional
     public List<Action<?>> determinePossibleActions() {
         List<Action<?>> actionList = new ArrayList<>();
-        for (ActionContribution actionContribution : actionContributions) {
+        for (ActionContribution actionContribution : applicationContext.getBeansOfType(ActionContribution.class).values()) {
             actionContribution.contributeActions(actionList);
         }
         return actionList;

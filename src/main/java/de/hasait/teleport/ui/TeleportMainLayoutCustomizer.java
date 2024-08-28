@@ -43,6 +43,8 @@ public class TeleportMainLayoutCustomizer implements MainLayoutCustomizer {
 
     @Override
     public void populateDrawer(VerticalLayout verticalLayout) {
+        VaadinUtil.addDataViewRouterLink(verticalLayout, VirtualMachinePO.class, "overview", VmsOverView.class);
+        
         VaadinUtil.addDataViewRouterLink(verticalLayout, LocationPO.class, "grid", LocationGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, NetworkPO.class, "grid", NetworkGridView.class);
         VaadinUtil.addDataViewRouterLink(verticalLayout, HostPO.class, "grid", HostGridView.class);

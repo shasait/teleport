@@ -83,8 +83,7 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
     public VirtualMachinePO create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
         boolean dryMode;
         if (runInstallation) {
-            // TODO implement
-            throw new RuntimeException("NYI");
+            throw new RuntimeException("NYI"); // TODO implement
         } else {
             dryMode = qmCreate(hypervisor, config);
         }
@@ -379,7 +378,9 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
 
         int vaIndex = 0;
         for (VolumeAttachmentCreateTO vaConfig : config.getVolumeAttachments()) {
-            VolumeCreateTO vConfig = vaConfig.getVolume();
+            VolumeCreateTO vConfig = new VolumeCreateTO();
+            vConfig.setSizeBytes(vaConfig.getSizeBytes());
+            vConfig.setStorageName(vaConfig.getStorageName());
             vConfig.setName(createVolumeName(hvid, vaIndex));
             VolumePO volume = storageService.createVolume(hypervisor.getHost(), vConfig);
             String qmVolRef = volume.getStorage().getName() + ":" + volume.getName();

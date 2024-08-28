@@ -18,7 +18,6 @@ package de.hasait.teleport.ui;
 
 
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import de.hasait.common.ui.AbstractCrudGrid;
@@ -33,7 +32,6 @@ import jakarta.annotation.security.PermitAll;
  */
 @PermitAll
 @Route(value = "locations", layout = MainLayout.class)
-@RouteAlias(value = "", layout = MainLayout.class)
 @SpringComponent
 @UIScope
 public class LocationGridView extends AbstractCrudGrid<LocationPO, LocationRepository> {

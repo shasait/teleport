@@ -56,7 +56,7 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public List<HostReferenceTO> canCreateVolume(VolumeCreateTO volumeCreateTO) {
-        return List.of(); // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -180,22 +180,22 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public CanResult canDeleteVolume(VolumeReferenceTO volumeReferenceTO) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public CanResult canDeleteVolume(VolumePO volume) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean deleteVolume(VolumeReferenceTO volumeReferenceTO) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public boolean deleteVolume(VolumePO volume) {
-        return false; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -278,12 +278,12 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
 
     @Override
     public CanResult canFullSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeReferenceTO tgtVolumeTO, boolean replaceExisting) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
     public CanResult canFullSync(VolumeSnapshotPO srcVolumeSnapshot, StoragePO tgtStorage, String volumeName, boolean replaceExisting) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     @Override
@@ -297,9 +297,28 @@ public class StorageServiceImpl extends AbstractRefreshableDriverService<Storage
             getProviderByIdNotNull(srcVolumeSnapshot.obtainStorage().getDriver()).syncVolumeFull(srcVolumeSnapshot, tgtStorage, volumeName, replaceExisting);
             return true;
         } else {
-            // TODO generic sync via dd and ssh
-            throw new RuntimeException("NYI");
+            throw new RuntimeException("NYI"); // TODO implement generic sync via dd and ssh
         }
+    }
+
+    @Override
+    public CanResult canIncrSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeSnapshotReferenceTO tgtVolumeSnapshotTO) {
+        throw new RuntimeException("NYI"); // TODO implement
+    }
+
+    @Override
+    public CanResult canIncrSync(VolumeSnapshotPO srcVolumeSnapshot, VolumeSnapshotPO tgtVolumeSnapshot) {
+        throw new RuntimeException("NYI"); // TODO implement
+    }
+
+    @Override
+    public boolean incrSync(VolumeSnapshotReferenceTO srcVolumeSnapshotTO, VolumeSnapshotReferenceTO tgtVolumeSnapshotTO) {
+        throw new RuntimeException("NYI"); // TODO implement
+    }
+
+    @Override
+    public boolean incrSync(VolumeSnapshotPO srcVolumeSnapshot, VolumeSnapshotPO tgtVolumeSnapshot) {
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     private StorageDriver getProviderByIdNotNull(HasStorage hasStorage) {

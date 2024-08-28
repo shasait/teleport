@@ -89,8 +89,7 @@ public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDr
     public VirtualMachinePO create(HypervisorPO hypervisor, VmCreateTO config, boolean runInstallation) {
         boolean dryMode;
         if (runInstallation) {
-            // TODO implement
-            throw new RuntimeException("NYI");
+            throw new RuntimeException("NYI"); // TODO implement
         } else {
             dryMode = virshDefineFromTemplate(hypervisor, config);
         }
@@ -370,7 +369,9 @@ public class VirshDriver extends AbstractRefreshableDriver<HypervisorPO, VirshDr
             // TODO templateModel.cpu.topoextPolicy = hypervisor.getInfo().isTopoext() ? "require" : "optional";
             int vaIndex = 0;
             for (var vaConfig : config.getVolumeAttachments()) {
-                VolumeCreateTO vConfig = vaConfig.getVolume();
+                VolumeCreateTO vConfig = new VolumeCreateTO();
+                vConfig.setSizeBytes(vaConfig.getSizeBytes());
+                vConfig.setStorageName(vaConfig.getStorageName());
                 vConfig.setName(createVolumeName(config.getName(), vaIndex));
                 VolumePO volume = storageService.createVolume(hypervisor.getHost(), vConfig);
                 String devOnHv = volume.getDev();

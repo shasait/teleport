@@ -106,11 +106,11 @@ public class AllMapper {
     }
 
     public VolumeTO mapToVolumeTO(VolumePO volume) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
     public VirtualMachineTO mapToVirtualMachineTO(VirtualMachinePO virtualMachine) {
-        return null; // TODO implement
+        throw new RuntimeException("NYI"); // TODO implement
     }
 
 }
