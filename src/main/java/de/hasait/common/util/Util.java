@@ -21,7 +21,9 @@ import org.springframework.scheduling.support.CronExpression;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -119,6 +121,10 @@ public class Util {
             sb.append(chars[index]);
         }
         return sb.toString();
+    }
+
+    public static <K, V> void multiMapPut(Map<K, List<V>> map, K key, V value) {
+        map.computeIfAbsent(key, ignored -> new ArrayList<>()).add(value);
     }
 
 }

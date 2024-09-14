@@ -188,12 +188,18 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
 
     @Override
     public CanResult canShutdownVm(VirtualMachinePO virtualMachine) {
-        throw new RuntimeException("NYI"); // TODO implement
-    }
+        if (virtualMachine.stateIsShutOff()) {
+            return CanResult.hasNoEffect("VM " + virtualMachine + " already shut off");
+        }
 
-    @Override
-    public boolean shutdownVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
-        return shutdownVm(allMapper.findVm(virtualMachineReferenceTO).orElseThrow());
+        CanResult current = CanResult.valid();
+        for (VolumeAttachmentPO va : virtualMachine.getVolumeAttachments()) {
+            current = current.merge(canResult -> storageService.canDeactivateVolume(va.getVolume()));
+        }
+        if (current.isValidWithEffect()) {
+            current.putContext(VirtualMachinePO.class, virtualMachine);
+        }
+        return current;
     }
 
     @Override
@@ -202,8 +208,24 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
     }
 
     @Override
+    public boolean shutdownVm(VirtualMachineReferenceTO virtualMachineReferenceTO) {
+        CanResult canResult = canShutdownVm(virtualMachineReferenceTO);
+        return shutdownVm(canResult);
+    }
+
+    @Override
     public boolean shutdownVm(VirtualMachinePO virtualMachine) {
-        // TODO can
+        CanResult canResult = canShutdownVm(virtualMachine);
+        return shutdownVm(canResult);
+    }
+
+    private boolean shutdownVm(CanResult canResult) {
+        if (canResult.ensureValidAndReturnHasNoEffect()) {
+            return false;
+        }
+
+        VirtualMachinePO virtualMachine = canResult.getContextNotNull(VirtualMachinePO.class);
+
         getProviderByIdNotNull(virtualMachine).shutdown(virtualMachine);
         for (var va : virtualMachine.getVolumeAttachments()) {
             storageService.deactivateVolume(va.getVolume());

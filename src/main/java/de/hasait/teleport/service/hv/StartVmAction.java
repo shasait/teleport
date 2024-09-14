@@ -30,7 +30,9 @@ public class StartVmAction extends AbstractAction<Void> {
 
         this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
 
-        addUiBinding("hostName=" + hostName);
+        addUiBinding(vm.toFqName());
+        addUiBinding(vm.getHypervisor().toFqName());
+        addUiBinding(vm.getHypervisor().getHost().toFqName());
     }
 
     @Override

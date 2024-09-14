@@ -369,6 +369,7 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
         command.addAll(List.of("--ostype", "l26")); // win10
         command.addAll(List.of("--bios", "seabios"));
         command.addAll(List.of("--start", "0"));
+        command.addAll(List.of("--cpu", "x86-64-v2-AES"));
         command.addAll(List.of("--sockets", "1"));
         command.addAll(List.of("--cores", "" + config.getCores()));
         if (config.isMemHugePages()) {
@@ -376,6 +377,7 @@ public class ProxmoxDriver extends AbstractRefreshableDriver<HypervisorPO, Proxm
         }
         command.addAll(List.of("--memory", "" + config.getMemMb()));
 
+        command.addAll(List.of("--scsihw", "virtio-scsi-single"));
         int vaIndex = 0;
         for (VolumeAttachmentCreateTO vaConfig : config.getVolumeAttachments()) {
             VolumeCreateTO vConfig = new VolumeCreateTO();

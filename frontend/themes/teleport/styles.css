@@ -9,10 +9,27 @@
 }
 .overviewTable .overviewTh, .overviewTable .overviewTd {
   border: 1px solid #000000;
-  padding: 5px 4px;
+  padding: 3px 2px;
 }
+.overviewTh span, .overviewTd span {
+  padding: 2px 1px;
+}
+
+.overviewTd span.state-RUNNING {
+  color: #00bb00;
+}
+.overviewTd span.state-SHUTOFF {
+  color: #0000cc;
+}
+.overviewTd span.volumeState-ACTIVE {
+  color: #bb00bb;
+}
+.overviewTd span.volumeState-INACTIVE {
+  color: #0000cc;
+}
+
 .overviewTable .overviewTableBody .overviewTd {
-  font-size: 14px;
+  font-size: 12px;
 }
 .overviewTable .overviewTableHead {
   background: #d0d0d0;
@@ -22,7 +39,7 @@
   border-bottom: 2px solid #000000;
 }
 .overviewTable .overviewTableHead .overviewTh {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   color: #000000;
   text-align: left;

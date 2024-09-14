@@ -17,18 +17,30 @@
 package de.hasait.teleport.ui;
 
 
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.HasComponents;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import de.hasait.common.ui.MainLayout;
+import de.hasait.common.util.Util;
+import de.hasait.teleport.api.VmState;
+import de.hasait.teleport.api.VolumeState;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
+import de.hasait.teleport.service.action.Action;
+import de.hasait.teleport.service.action.ActionService;
 import jakarta.annotation.security.PermitAll;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -40,48 +52,93 @@ import jakarta.annotation.security.PermitAll;
 @UIScope
 public class VmsOverView extends VerticalLayout {
 
-    public VmsOverView(VirtualMachineRepository virtualMachineRepository) {
+    private final ActionService actionService;
+
+    public VmsOverView(VirtualMachineRepository virtualMachineRepository, ActionService actionService) {
+        this.actionService = actionService;
+
+        List<VirtualMachinePO> allVms = virtualMachineRepository.findAll();
+
+        List<Action<?>> actions = actionService.determinePossibleActions();
+        Map<String, List<Action<?>>> actionsByUiBinding = new HashMap<>();
+        actions.forEach(action -> action.getUiBindings().forEach(uiBinding -> Util.multiMapPut(actionsByUiBinding, uiBinding, action)));
+
         Div table = createDiv("overviewTable", this);
         Div thead = createDiv("overviewTableHead", table);
         Div headerRow = createDiv("overviewTr", thead);
 
-        Div nameHeader = createDiv("overviewTh", headerRow);
-        nameHeader.setText("Name");
+        createDiv("overviewTh", headerRow, "Name");
+        createDiv("overviewTh", headerRow, "State");
 
-        Div stateHeader = createDiv("overviewTh", headerRow);
-        stateHeader.setText("State");
+        int maxVolumeAttachments = allVms.stream().mapToInt(vm -> vm.getVolumeAttachments().size()).max().orElse(1);
+        for (int i = 0; i < maxVolumeAttachments; i++) {
+            createDiv("overviewTh", headerRow, "Volume" + i);
+        }
+
+        createDiv("overviewTh", headerRow, "Actions");
 
         Div tbody = createDiv("overviewTableBody", table);
-        int maxVas = 0;
-        for (VirtualMachinePO virtualMachine : virtualMachineRepository.findAll()) {
+        for (VirtualMachinePO virtualMachine : allVms) {
             Div bodyRow = createDiv("overviewTr", tbody);
 
-            Div nameCell = createDiv("overviewTd", bodyRow);
-            nameCell.setText(virtualMachine.getName());
+            Div nameCell = createDiv("overviewTd", bodyRow, virtualMachine.getName());
 
             Div stateCell = createDiv("overviewTd", bodyRow);
-            stateCell.setText(virtualMachine.getState().name());
+            VmState state = virtualMachine.getState();
+            createSpan("state-" + state.name(), stateCell, state.name());
 
             int vaIndex = 0;
             for (VolumeAttachmentPO volumeAttachment : virtualMachine.getVolumeAttachments()) {
-                Div vaCell = createDiv("overviewTd", bodyRow);
-                vaCell.setText(volumeAttachment.getDev() + "=" + volumeAttachment.getVolume().toFqName());
+                Div volumeCell = createDiv("overviewTd", bodyRow);
+                VolumeState volumeState = volumeAttachment.getVolume().getState();
+                createSpan("volumeState-" + volumeState.name(), volumeCell, volumeState.name());
+                createSpan("overviewValue", volumeCell, volumeAttachment.getDev() + "=" + volumeAttachment.getVolume().toFqName());
                 vaIndex++;
             }
-            maxVas = Math.max(maxVas, vaIndex);
-        }
+            while (vaIndex < maxVolumeAttachments) {
+                createDiv("overviewTd", bodyRow);
+                vaIndex++;
+            }
 
-        for (int va = 0; va < maxVas; va++) {
-            Div vaHeader = createDiv("overviewTh", headerRow);
-            vaHeader.setText("Volume" + va);
+            Div actionsCell = createDiv("overviewTd", bodyRow);
+            List<Action<?>> vmActions = actionsByUiBinding.get(virtualMachine.toFqName());
+            if (vmActions != null && !vmActions.isEmpty()) {
+                for (Action<?> action : vmActions) {
+                    Button button = new Button(action.getDescription());
+                    button.addSingleClickListener(event -> onActionClick(event, action));
+                    actionsCell.add(button);
+                }
+            }
         }
     }
 
+    private void onActionClick(ClickEvent<Button> buttonClickEvent, Action<?> action) {
+        buttonClickEvent.getSource().setEnabled(false);
+        actionService.submit(action);
+    }
+
     private Div createDiv(String className, HasComponents parent) {
+        return createDiv(className, parent, null);
+    }
+
+    private Div createDiv(String className, HasComponents parent, String text) {
         Div div = new Div();
+        if (text != null) {
+            div.setText(text);
+        }
         div.addClassName(className);
         parent.add(div);
         return div;
+    }
+
+    private Span createSpan(String className, HasComponents parent, String text) {
+        Span span = new Span();
+        if (text != null) {
+            span.setText(text);
+        }
+        span.addClassName(className);
+        parent.add(span);
+        return span;
     }
 
 }
