@@ -34,9 +34,9 @@ public class FullSyncVmToOtherHvAction extends AbstractAction<Void> {
         this.srcVm = new VirtualMachineReferenceTO(srcHostName, srcHvName, srcVmName);
         this.tgtHost = new HostReferenceTO(tgtHostName);
 
-        addUiBinding(srcVm.toFqName());
-        addUiBinding(srcVm.getHypervisor().toFqName());
-        addUiBinding(srcVm.getHypervisor().getHost().toFqName());
+        addUiBinding(srcVm.toFqName(), "Full Sync to " + tgtHostName); // TODO I18N
+        addUiBinding(srcVm.getHypervisor().toFqName(), "Full Sync of " + srcVm + " to " + tgtHostName); // TODO I18N
+        addUiBinding(srcVm.getHypervisor().getHost().toFqName(), getDescription()); // TODO I18N
     }
 
     @Override

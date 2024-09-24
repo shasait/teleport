@@ -31,6 +31,7 @@ import de.hasait.common.ui.MainLayout;
 import de.hasait.common.util.Util;
 import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.api.VolumeState;
+import de.hasait.teleport.domain.NetworkInterfacePO;
 import de.hasait.teleport.domain.VirtualMachinePO;
 import de.hasait.teleport.domain.VirtualMachineRepository;
 import de.hasait.teleport.domain.VolumeAttachmentPO;
@@ -61,31 +62,44 @@ public class VmsOverView extends VerticalLayout {
 
         List<Action<?>> actions = actionService.determinePossibleActions();
         Map<String, List<Action<?>>> actionsByUiBinding = new HashMap<>();
-        actions.forEach(action -> action.getUiBindings().forEach(uiBinding -> Util.multiMapPut(actionsByUiBinding, uiBinding, action)));
+        actions.forEach(action -> action.getUiBindings().forEach((key, title) -> Util.multiMapPut(actionsByUiBinding, key, action)));
 
         Div table = createDiv("overviewTable", this);
         Div thead = createDiv("overviewTableHead", table);
         Div headerRow = createDiv("overviewTr", thead);
 
-        createDiv("overviewTh", headerRow, "Name");
-        createDiv("overviewTh", headerRow, "State");
+        createDiv("overviewTh", headerRow, "Name"); // TODO I18N
+        createDiv("overviewTh", headerRow, "State"); // TODO I18N
+
+        createDiv("overviewTh", headerRow, "Cores"); // TODO I18N
+        createDiv("overviewTh", headerRow, "MemMB"); // TODO I18N
+        createDiv("overviewTh", headerRow, "HugeP"); // TODO I18N
 
         int maxVolumeAttachments = allVms.stream().mapToInt(vm -> vm.getVolumeAttachments().size()).max().orElse(1);
         for (int i = 0; i < maxVolumeAttachments; i++) {
-            createDiv("overviewTh", headerRow, "Volume" + i);
+            createDiv("overviewTh", headerRow, "Volume" + i); // TODO I18N
         }
 
-        createDiv("overviewTh", headerRow, "Actions");
+        int maxNetworkInterfaces = allVms.stream().mapToInt(vm -> vm.getNetworkInterfaces().size()).max().orElse(1);
+        for (int i = 0; i < maxNetworkInterfaces; i++) {
+            createDiv("overviewTh", headerRow, "Net" + i); // TODO I18N
+        }
+
+        createDiv("overviewTh", headerRow, "Actions"); // TODO I18N
 
         Div tbody = createDiv("overviewTableBody", table);
         for (VirtualMachinePO virtualMachine : allVms) {
             Div bodyRow = createDiv("overviewTr", tbody);
 
-            Div nameCell = createDiv("overviewTd", bodyRow, virtualMachine.getName());
+            Div nameCell = createDiv("overviewTd", bodyRow, virtualMachine.toFqName());
 
             Div stateCell = createDiv("overviewTd", bodyRow);
             VmState state = virtualMachine.getState();
             createSpan("state-" + state.name(), stateCell, state.name());
+
+            createDiv("overviewTd", bodyRow, Integer.toString(virtualMachine.getCores()));
+            createDiv("overviewTd", bodyRow, Integer.toString(virtualMachine.getMemMb()));
+            createDiv("overviewTd", bodyRow, virtualMachine.isMemHugePages() ? "X" : "O");
 
             int vaIndex = 0;
             for (VolumeAttachmentPO volumeAttachment : virtualMachine.getVolumeAttachments()) {
@@ -100,11 +114,27 @@ public class VmsOverView extends VerticalLayout {
                 vaIndex++;
             }
 
+            int niIndex = 0;
+            for (NetworkInterfacePO networkInterface : virtualMachine.getNetworkInterfaces()) {
+                Div networkInterfaceCell = createDiv("overviewTd", bodyRow);
+                createSpan("overviewValue", networkInterfaceCell, networkInterface.getNetwork().getName());
+                createSpan("overviewValue", networkInterfaceCell, networkInterface.getMac());
+                createSpan("overviewValue", networkInterfaceCell, networkInterface.getIpv4());
+                niIndex++;
+            }
+            while (niIndex < maxNetworkInterfaces) {
+                createDiv("overviewTd", bodyRow);
+                niIndex++;
+            }
+
             Div actionsCell = createDiv("overviewTd", bodyRow);
-            List<Action<?>> vmActions = actionsByUiBinding.get(virtualMachine.toFqName());
+            String uiBindingKey = virtualMachine.toFqName();
+            List<Action<?>> vmActions = actionsByUiBinding.get(uiBindingKey);
             if (vmActions != null && !vmActions.isEmpty()) {
                 for (Action<?> action : vmActions) {
-                    Button button = new Button(action.getDescription());
+                    String title = action.getUiBindings().get(uiBindingKey);
+                    Button button = new Button(title);
+                    button.setTooltipText(action.getDescription());
                     button.addSingleClickListener(event -> onActionClick(event, action));
                     actionsCell.add(button);
                 }

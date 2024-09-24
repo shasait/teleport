@@ -24,6 +24,9 @@
 .overviewTd span.volumeState-ACTIVE {
   color: #bb00bb;
 }
+.overviewTd span.volumeState-DIRTY {
+  color: #999900;
+}
 .overviewTd span.volumeState-INACTIVE {
   color: #0000cc;
 }

@@ -16,21 +16,21 @@
 
 package de.hasait.teleport.service.action;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractAction<R> implements Action<R> {
 
     private final String description;
 
-    private final Set<String> uiBindings = new HashSet<>();
+    private final Map<String, String> uiBindings = new HashMap<>();
 
     protected AbstractAction(String description) {
         this.description = description;
     }
 
-    protected final void addUiBinding(String o) {
-        uiBindings.add(o);
+    protected final void addUiBinding(String key, String title) {
+        uiBindings.put(key, title);
     }
 
     @Override
@@ -39,7 +39,7 @@ public abstract class AbstractAction<R> implements Action<R> {
     }
 
     @Override
-    public Set<String> getUiBindings() {
+    public Map<String, String> getUiBindings() {
         return uiBindings;
     }
 

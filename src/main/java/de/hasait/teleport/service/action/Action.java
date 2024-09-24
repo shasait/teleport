@@ -20,13 +20,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.TransactionStatus;
 
 import java.io.Serializable;
-import java.util.Set;
+import java.util.Map;
 
 public interface Action<R> extends Serializable {
 
     String getDescription();
 
-    Set<String> getUiBindings();
+    Map<String, String> getUiBindings();
 
     R execute(ApplicationContext applicationContext, TransactionStatus transactionStatus);
 

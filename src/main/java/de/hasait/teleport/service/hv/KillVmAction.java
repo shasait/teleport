@@ -30,9 +30,9 @@ public class KillVmAction extends AbstractAction<Void> {
 
         this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
 
-        addUiBinding(vm.toFqName());
-        addUiBinding(vm.getHypervisor().toFqName());
-        addUiBinding(vm.getHypervisor().getHost().toFqName());
+        addUiBinding(vm.toFqName(), "Kill"); // TODO I18N
+        addUiBinding(vm.getHypervisor().toFqName(), "Kill " + vmName); // TODO I18N
+        addUiBinding(vm.getHypervisor().getHost().toFqName(), getDescription()); // TODO I18N
     }
 
     @Override

@@ -30,9 +30,10 @@ public class ShutdownVmAction extends AbstractAction<Void> {
 
         this.vm = new VirtualMachineReferenceTO(hostName, hvName, vmName);
 
-        addUiBinding(vm.toFqName());
-        addUiBinding(vm.getHypervisor().toFqName());
-        addUiBinding(vm.getHypervisor().getHost().toFqName());
+        addUiBinding(vm.toFqName(), "Shutdown"); // TODO I18N
+        addUiBinding(vm.toFqName() + ".state", "Shutdown"); // TODO I18N
+        addUiBinding(vm.getHypervisor().toFqName(), "Shutdown " + vmName); // TODO I18N
+        addUiBinding(vm.getHypervisor().getHost().toFqName(), getDescription()); // TODO I18N
     }
 
     @Override
