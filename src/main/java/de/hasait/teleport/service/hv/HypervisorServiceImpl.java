@@ -23,6 +23,7 @@ import de.hasait.teleport.api.VirtualMachineReferenceTO;
 import de.hasait.teleport.api.VirtualMachineTO;
 import de.hasait.teleport.api.VmCreateNetIfTO;
 import de.hasait.teleport.api.VmCreateTO;
+import de.hasait.teleport.api.VmState;
 import de.hasait.teleport.api.VolumeAttachmentCreateTO;
 import de.hasait.teleport.api.VolumeReferenceTO;
 import de.hasait.teleport.domain.HasHypervisor;
@@ -192,14 +193,19 @@ public class HypervisorServiceImpl extends AbstractRefreshableDriverService<Hype
             return CanResult.hasNoEffect("VM " + virtualMachine + " already shut off");
         }
 
-        CanResult current = CanResult.valid();
-        for (VolumeAttachmentPO va : virtualMachine.getVolumeAttachments()) {
-            current = current.merge(canResult -> storageService.canDeactivateVolume(va.getVolume()));
+        virtualMachine.pushTransientState(VmState.SHUTOFF);
+        try {
+            CanResult current = CanResult.valid();
+            for (VolumeAttachmentPO va : virtualMachine.getVolumeAttachments()) {
+                current = current.merge(canResult -> storageService.canDeactivateVolume(va.getVolume()));
+            }
+            if (current.isValidWithEffect()) {
+                current.putContext(VirtualMachinePO.class, virtualMachine);
+            }
+            return current;
+        } finally {
+            virtualMachine.popTransientState();
         }
-        if (current.isValidWithEffect()) {
-            current.putContext(VirtualMachinePO.class, virtualMachine);
-        }
-        return current;
     }
 
     @Override

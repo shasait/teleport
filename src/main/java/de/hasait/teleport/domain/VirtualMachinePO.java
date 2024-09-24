@@ -35,6 +35,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -110,6 +111,8 @@ public class VirtualMachinePO implements PersistantObject, HasVirtualMachine {
     @OrderBy("name ASC")
     private List<NetworkInterfacePO> networkInterfaces = new ArrayList<>();
 
+    private transient LinkedList<VmState> transientStateStack = new LinkedList<>();
+
     public VirtualMachinePO() {
     }
 
@@ -181,11 +184,19 @@ public class VirtualMachinePO implements PersistantObject, HasVirtualMachine {
     }
 
     public VmState getState() {
-        return state;
+        return transientStateStack.isEmpty() ? state : transientStateStack.getFirst();
     }
 
     public void setState(VmState state) {
         this.state = state;
+    }
+
+    public void pushTransientState(VmState transientState) {
+        this.transientStateStack.addFirst(transientState);
+    }
+
+    public void popTransientState() {
+        this.transientStateStack.removeFirst();
     }
 
     public int getCores() {
@@ -258,15 +269,15 @@ public class VirtualMachinePO implements PersistantObject, HasVirtualMachine {
     }
 
     public boolean stateIsRunning() {
-        return state == VmState.RUNNING;
+        return getState() == VmState.RUNNING;
     }
 
     public boolean stateIsShutOff() {
-        return state == VmState.SHUTOFF;
+        return getState() == VmState.SHUTOFF;
     }
 
     public boolean stateIsNotShutOff() {
-        return state != VmState.SHUTOFF;
+        return getState() != VmState.SHUTOFF;
     }
 
     public String toFqName() {
